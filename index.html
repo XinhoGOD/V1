@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Admin - NFL Fantasy Trends</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2.39.3/dist/umd/supabase.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Header -->
+        <header class="dashboard-header">
+            <div class="header-content">
+                <h1><i class="fas fa-chart-line"></i> NFL Fantasy Trends Dashboard</h1>
+                <div class="header-controls">
+                    <div class="search-container">
+                        <input type="text" id="playerSearch" placeholder="Buscar jugador..." class="search-input">
+                        <i class="fas fa-search search-icon"></i>
+                    </div>
+                    <button id="refreshBtn" class="btn-refresh">
+                        <i class="fas fa-sync-alt"></i> Actualizar
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-content">
+                <!-- Navigation Menu -->
+                <nav class="sidebar-nav">
+                    <h3><i class="fas fa-bars"></i> Navegación</h3>
+                    <ul class="nav-menu">
+                        <li>
+                            <a href="dashboard.html" class="nav-item">
+                                <i class="fas fa-tachometer-alt"></i>
+                                <span>Dashboard</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="index.html" class="nav-item active">
+                                <i class="fas fa-users"></i>
+                                <span>Jugadores</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="sleepers.html" class="nav-item">
+                                <i class="fas fa-eye"></i>
+                                <span>Sleepers</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="trends.html" class="nav-item">
+                                <i class="fas fa-trending-up"></i>
+                                <span>Tendencias</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="fantasy-alert.html" class="nav-item">
+                                <i class="fas fa-bell"></i>
+                                <span>Fantasy Alert</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="settings.html" class="nav-item">
+                                <i class="fas fa-cog"></i>
+                                <span>Configuración</span>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+
+                <div class="filters-section">
+                    <h3><i class="fas fa-filter"></i> Filtros</h3>
+                    
+                    <div class="filter-group">
+                        <label for="positionFilter">Posición:</label>
+                        <select id="positionFilter" class="filter-select">
+                            <option value="">Todas las posiciones</option>
+                            <option value="QB">QB</option>
+                            <option value="RB">RB</option>
+                            <option value="WR">WR</option>
+                            <option value="TE">TE</option>
+                            <option value="K">K</option>
+                            <option value="DEF">DEF</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="teamFilter">Equipo:</label>
+                        <select id="teamFilter" class="filter-select">
+                            <option value="">Todos los equipos</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="weekFilter">Semana:</label>
+                        <select id="weekFilter" class="filter-select">
+                            <option value="">Todas las semanas</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="rosteredFilter">Min % Rostered:</label>
+                        <input type="range" id="rosteredFilter" min="0" max="100" value="0" class="filter-range">
+                        <span id="rosteredValue" class="range-value">0%</span>
+                    </div>
+                </div>
+
+                <div class="stats-summary">
+                    <h3><i class="fas fa-chart-bar"></i> Resumen</h3>
+                    <div class="stat-item">
+                        <span class="stat-label">Total Jugadores:</span>
+                        <span id="totalPlayers" class="stat-value">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Jugadores Filtrados:</span>
+                        <span id="filteredPlayers" class="stat-value">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Última Actualización:</span>
+                        <span id="lastUpdate" class="stat-value">-</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Loading Indicator -->
+            <div id="loadingIndicator" class="loading-container">
+                <div class="loading-spinner"></div>
+                <p>Cargando datos de jugadores...</p>
+            </div>
+
+            <!-- Players List -->
+            <div id="playersContainer" class="players-container" style="display: none;">
+                <div class="players-header">
+                    <h2>Jugadores</h2>
+                    <div class="sort-controls">
+                        <label for="sortBy">Ordenar por:</label>
+                        <select id="sortBy" class="sort-select">
+                            <option value="player_name">Nombre</option>
+                            <option value="percent_rostered">% Rostered</option>
+                            <option value="percent_started">% Started</option>
+                            <option value="adds">Adds</option>
+                            <option value="drops">Drops</option>
+                        </select>
+                        <button id="sortOrder" class="btn-sort" data-order="asc">
+                            <i class="fas fa-sort-amount-up"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="playersList" class="players-list">
+                    <!-- Players will be populated here -->
+                </div>
+            </div>
+
+            <!-- Player Detail Modal -->
+            <div id="playerModal" class="modal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2 id="modalPlayerName">Detalles del Jugador</h2>
+                        <span class="close">&times;</span>
+                    </div>
+                    <div class="modal-body">
+                        <div class="player-info">
+                            <div class="info-grid">
+                                <div class="info-item">
+                                    <span class="info-label">Posición:</span>
+                                    <span id="modalPosition" class="info-value"></span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Equipo:</span>
+                                    <span id="modalTeam" class="info-value"></span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Oponente:</span>
+                                    <span id="modalOpponent" class="info-value"></span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">% Rostered Actual:</span>
+                                    <span id="modalRostered" class="info-value"></span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">% Started Actual:</span>
+                                    <span id="modalStarted" class="info-value"></span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Adds Totales:</span>
+                                    <span id="modalAdds" class="info-value"></span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Drops Totales:</span>
+                                    <span id="modalDrops" class="info-value"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="charts-container">
+                            <div class="chart-section">
+                                <h3>% Rostered</h3>
+                                <canvas id="rosteredChart"></canvas>
+                            </div>
+                            
+                            <div class="chart-section">
+                                <h3>Cambios en % Rostered</h3>
+                                <canvas id="rosteredChangeChart"></canvas>
+                            </div>
+                            
+                            <div class="chart-section">
+                                <h3>% Started</h3>
+                                <canvas id="startedChart"></canvas>
+                            </div>
+                            
+                            <div class="chart-section">
+                                <h3>Cambios en % Started</h3>
+                                <canvas id="startedChangeChart"></canvas>
+                            </div>
+                            
+                            <div class="chart-section">
+                                <h3>Adds</h3>
+                                <canvas id="addsChart"></canvas>
+                            </div>
+                            
+                            <div class="chart-section">
+                                <h3>Drops</h3>
+                                <canvas id="dropsChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Configuration Modal -->
+    <div id="configModal" class="modal">
+        <div class="modal-content config-modal">
+            <div class="modal-header">
+                <h2>Configuración de Supabase</h2>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="config-form">
+                    <div class="form-group">
+                        <label for="supabaseUrl">URL de Supabase:</label>
+                        <input type="text" id="supabaseUrl" placeholder="https://tu-proyecto.supabase.co" class="config-input">
+                    </div>
+                    <div class="form-group">
+                        <label for="supabaseKey">Anon Key de Supabase:</label>
+                        <input type="password" id="supabaseKey" placeholder="Tu clave anónima" class="config-input">
+                    </div>
+                    <div class="form-actions">
+                        <button id="saveConfig" class="btn-primary">Guardar Configuración</button>
+                        <button id="testConnection" class="btn-secondary">Probar Conexión</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Configuration Button -->
+    <button id="configBtn" class="config-btn" title="Configurar Supabase">
+        <i class="fas fa-cog"></i>
+    </button>
+
+    <script src="app.js"></script>
+</body>
+</html>

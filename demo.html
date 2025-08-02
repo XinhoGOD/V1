@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demo - NFL Fantasy Trends Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Header -->
+        <header class="dashboard-header">
+            <div class="header-content">
+                <h1><i class="fas fa-chart-line"></i> NFL Fantasy Trends Dashboard - DEMO</h1>
+                <div class="header-controls">
+                    <div class="search-container">
+                        <input type="text" placeholder="Buscar jugador..." class="search-input">
+                        <i class="fas fa-search search-icon"></i>
+                    </div>
+                    <button class="btn-refresh">
+                        <i class="fas fa-sync-alt"></i> Demo Mode
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-content">
+                <div class="filters-section">
+                    <h3><i class="fas fa-filter"></i> Filtros</h3>
+                    
+                    <div class="filter-group">
+                        <label>Posición:</label>
+                        <select class="filter-select">
+                            <option value="">Todas las posiciones</option>
+                            <option value="QB">QB</option>
+                            <option value="RB">RB</option>
+                            <option value="WR">WR</option>
+                            <option value="TE">TE</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label>Equipo:</label>
+                        <select class="filter-select">
+                            <option value="">Todos los equipos</option>
+                            <option value="BUF">Buffalo Bills</option>
+                            <option value="MIA">Miami Dolphins</option>
+                            <option value="KC">Kansas City Chiefs</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="stats-summary">
+                    <h3><i class="fas fa-chart-bar"></i> Resumen</h3>
+                    <div class="stat-item">
+                        <span class="stat-label">Total Jugadores:</span>
+                        <span class="stat-value">1,247</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Jugadores Filtrados:</span>
+                        <span class="stat-value">3</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Última Actualización:</span>
+                        <span class="stat-value">2 ago, 14:30</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="players-container">
+                <div class="players-header">
+                    <h2>Jugadores Destacados</h2>
+                    <div class="sort-controls">
+                        <label>Ordenar por:</label>
+                        <select class="sort-select">
+                            <option value="percent_rostered">% Rostered</option>
+                            <option value="percent_started">% Started</option>
+                            <option value="adds">Adds</option>
+                        </select>
+                        <button class="btn-sort">
+                            <i class="fas fa-sort-amount-up"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="players-list">
+                    <!-- Ejemplo Josh Allen -->
+                    <div class="player-card">
+                        <div class="player-info">
+                            <h3>Josh Allen</h3>
+                            <div class="player-meta">
+                                <span class="position-badge position-QB">QB</span>
+                                <span>BUF</span>
+                                <span>vs MIA</span>
+                                <span>Semana 1</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-value">87.3%</span>
+                            <span class="stat-label">Rostered</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-value change-positive">+2.1%</span>
+                            <span class="stat-label">Cambio R.</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-value">76.8%</span>
+                            <span class="stat-label">Started</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-value change-positive">+4.2%</span>
+                            <span class="stat-label">Cambio S.</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-value">142</span>
+                            <span class="stat-label">Adds</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-value">23</span>
+                            <span class="stat-label">Drops</span>
+                        </div>
+                    </div>
+
+                    <!-- Ejemplo Tyreek Hill -->
+                    <div class="player-card">
+                        <div class="player-info">
+                            <h3>Tyreek Hill</h3>
+                            <div class="player-meta">
+                                <span class="position-badge position-WR">WR</span>
+                                <span>MIA</span>
+                                <span>@ BUF</span>
+                                <span>Semana 1</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-value">94.1%</span>
+                            <span class="stat-label">Rostered</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-value change-negative">-1.2%</span>
+                            <span class="stat-label">Cambio R.</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-value">89.3%</span>
+                            <span class="stat-label">Started</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-value change-positive">+1.8%</span>
+                            <span class="stat-label">Cambio S.</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-value">67</span>
+                            <span class="stat-label">Adds</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-value">12</span>
+                            <span class="stat-label">Drops</span>
+                        </div>
+                    </div>
+
+                    <!-- Ejemplo Travis Kelce -->
+                    <div class="player-card">
+                        <div class="player-info">
+                            <h3>Travis Kelce</h3>
+                            <div class="player-meta">
+                                <span class="position-badge position-TE">TE</span>
+                                <span>KC</span>
+                                <span>vs LAC</span>
+                                <span>Semana 1</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-value">91.7%</span>
+                            <span class="stat-label">Rostered</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-value change-positive">+0.8%</span>
+                            <span class="stat-label">Cambio R.</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-value">84.2%</span>
+                            <span class="stat-label">Started</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-value change-negative">-2.1%</span>
+                            <span class="stat-label">Cambio S.</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-value">89</span>
+                            <span class="stat-label">Adds</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-value">8</span>
+                            <span class="stat-label">Drops</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Información sobre el Demo -->
+            <div style="margin-top: 2rem; padding: 1.5rem; background: #fef3c7; border-radius: 1rem; border-left: 4px solid #f59e0b;">
+                <h3 style="color: #92400e; margin-bottom: 1rem;">
+                    <i class="fas fa-info-circle"></i> Modo Demo
+                </h3>
+                <p style="color: #92400e; margin-bottom: 1rem;">
+                    Esta es una vista de demostración del dashboard. Para usar la versión completa:
+                </p>
+                <ol style="color: #92400e; margin-left: 1.5rem;">
+                    <li>Abre <strong>index.html</strong> en tu navegador</li>
+                    <li>Configura tu conexión a Supabase</li>
+                    <li>¡Explora todos los datos y gráficos interactivos!</li>
+                </ol>
+            </div>
+        </main>
+    </div>
+</body>
+</html>

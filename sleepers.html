@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sleepers - NFL Fantasy Trends</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2.39.3/dist/umd/supabase.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Header -->
+        <header class="dashboard-header">
+            <div class="header-content">
+                <h1><i class="fas fa-eye"></i> Sleepers - Jugadores Durmientes</h1>
+                <div class="header-controls">
+                    <div class="sleeper-mode-selector">
+                        <label for="sleeperMode">Modo de Detección:</label>
+                        <select id="sleeperMode" class="sleeper-mode-select">
+                            <option value="high_started">Alto % Started</option>
+                            <option value="started_trending">Started Trending Up</option>
+                            <option value="balanced">Balanceado</option>
+                        </select>
+                    </div>
+                    <button id="refreshSleepers" class="btn-refresh">
+                        <i class="fas fa-sync-alt"></i> Actualizar
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-content">
+                <!-- Navigation Menu -->
+                <nav class="sidebar-nav">
+                    <h3><i class="fas fa-bars"></i> Navegación</h3>
+                    <ul class="nav-menu">
+                        <li>
+                            <a href="dashboard.html" class="nav-item">
+                                <i class="fas fa-tachometer-alt"></i>
+                                <span>Dashboard</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="index.html" class="nav-item">
+                                <i class="fas fa-users"></i>
+                                <span>Jugadores</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="sleepers.html" class="nav-item active">
+                                <i class="fas fa-eye"></i>
+                                <span>Sleepers</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="trends.html" class="nav-item">
+                                <i class="fas fa-trending-up"></i>
+                                <span>Tendencias</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="fantasy-alert.html" class="nav-item">
+                                <i class="fas fa-bell"></i>
+                                <span>Fantasy Alert</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="settings.html" class="nav-item">
+                                <i class="fas fa-cog"></i>
+                                <span>Configuración</span>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+
+                <div class="filters-section">
+                    <h3><i class="fas fa-filter"></i> Filtros Sleeper</h3>
+                    
+                    <div class="filter-group">
+                        <label for="positionFilterSleeper">Posición:</label>
+                        <select id="positionFilterSleeper" class="filter-select">
+                            <option value="">Todas las posiciones</option>
+                            <option value="QB">QB</option>
+                            <option value="RB">RB</option>
+                            <option value="WR">WR</option>
+                            <option value="TE">TE</option>
+                            <option value="K">K</option>
+                            <option value="DEF">DEF</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="weekFilterSleeper">Semana:</label>
+                        <select id="weekFilterSleeper" class="filter-select">
+                            <option value="">Todas las semanas</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="maxRostered">Máx % Rostered:</label>
+                        <input type="range" id="maxRostered" min="0" max="50" value="25" class="filter-range">
+                        <span id="maxRosteredValue" class="range-value">25%</span>
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="minStarted">Mín % Started:</label>
+                        <input type="range" id="minStarted" min="0" max="100" value="20" class="filter-range">
+                        <span id="minStartedValue" class="range-value">20%</span>
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="minStartedChange">Mín Started Change:</label>
+                        <input type="range" id="minStartedChange" min="0" max="50" value="5" class="filter-range">
+                        <span id="minStartedChangeValue" class="range-value">5%</span>
+                    </div>
+                </div>
+
+                <div class="sleeper-summary">
+                    <h3><i class="fas fa-gem"></i> Resumen Sleepers</h3>
+                    <div class="stat-item">
+                        <span class="stat-label">Total Sleepers:</span>
+                        <span id="totalSleepers" class="stat-value">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Alto Potencial:</span>
+                        <span id="highPotentialSleepers" class="stat-value">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Mejor Sleeper:</span>
+                        <span id="topSleeperName" class="stat-value">-</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Score Promedio:</span>
+                        <span id="avgSleeperScore" class="stat-value">-</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Loading Indicator -->
+            <div id="loadingSleepers" class="loading-container">
+                <div class="loading-spinner"></div>
+                <p>Detectando jugadores sleepers...</p>
+            </div>
+
+            <!-- Sleeper Metrics -->
+            <div id="sleeperContent" class="sleeper-content" style="display: none;">
+                <div class="sleeper-metrics">
+                    <div class="metric-card sleeper-metric">
+                        <div class="metric-icon">
+                            <i class="fas fa-rocket"></i>
+                        </div>
+                        <div class="metric-info">
+                            <h3>Top Sleeper</h3>
+                            <div class="metric-value" id="topSleeperMetric">-</div>
+                            <div class="metric-subtitle" id="topSleeperPosition">-</div>
+                        </div>
+                    </div>
+
+                    <div class="metric-card sleeper-metric">
+                        <div class="metric-icon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <div class="metric-info">
+                            <h3>Mayor Momentum</h3>
+                            <div class="metric-value" id="momentumSleeperMetric">-</div>
+                            <div class="metric-subtitle" id="momentumSleeperChange">-</div>
+                        </div>
+                    </div>
+
+                    <div class="metric-card sleeper-metric">
+                        <div class="metric-icon">
+                            <i class="fas fa-eye-slash"></i>
+                        </div>
+                        <div class="metric-info">
+                            <h3>Más Oculto</h3>
+                            <div class="metric-value" id="hiddenSleeperMetric">-</div>
+                            <div class="metric-subtitle" id="hiddenSleeperRostered">-</div>
+                        </div>
+                    </div>
+
+                    <div class="metric-card sleeper-metric">
+                        <div class="metric-icon">
+                            <i class="fas fa-fire"></i>
+                        </div>
+                        <div class="metric-info">
+                            <h3>Más Hot</h3>
+                            <div class="metric-value" id="hottestSleeperMetric">-</div>
+                            <div class="metric-subtitle" id="hottestSleeperAdds">-</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sleeper Charts -->
+                <div class="sleeper-charts">
+                    <div class="chart-container">
+                        <h3>Distribución por Posición</h3>
+                        <canvas id="sleeperPositionChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <h3>Score vs % Rostered</h3>
+                        <canvas id="sleeperScatterChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Sleepers List -->
+                <div class="sleepers-container">
+                    <div class="sleepers-header">
+                        <h2>Jugadores Sleepers Detectados</h2>
+                        <div class="sort-controls">
+                            <label for="sortBySleeper">Ordenar por:</label>
+                            <select id="sortBySleeper" class="sort-select">
+                                <option value="sleeper_score">Score Sleeper</option>
+                                <option value="percent_started">% Started</option>
+                                <option value="percent_started_change">Started Change</option>
+                                <option value="percent_rostered">% Rostered</option>
+                                <option value="opportunity_score">Oportunidad</option>
+                            </select>
+                            <button id="sortOrderSleeper" class="btn-sort" data-order="desc">
+                                <i class="fas fa-sort-amount-down"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="sleepersList" class="sleepers-list">
+                        <!-- Sleepers will be populated here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sleeper Player Modal -->
+            <div id="sleeperPlayerModal" class="modal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2 id="sleeperModalPlayerName">Detalles del Sleeper</h2>
+                        <span class="close">&times;</span>
+                    </div>
+                    <div class="modal-body">
+                        <div class="player-info">
+                            <div class="info-grid">
+                                <div class="info-item">
+                                    <span class="info-label">Score Sleeper:</span>
+                                    <span id="sleeperModalScore" class="info-value sleeper-score"></span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Posición:</span>
+                                    <span id="sleeperModalPosition" class="info-value"></span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Equipo:</span>
+                                    <span id="sleeperModalTeam" class="info-value"></span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">% Rostered:</span>
+                                    <span id="sleeperModalRostered" class="info-value"></span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">% Started:</span>
+                                    <span id="sleeperModalStarted" class="info-value"></span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Started Change:</span>
+                                    <span id="sleeperModalStartedChange" class="info-value"></span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Oportunidad:</span>
+                                    <span id="sleeperModalOpportunity" class="info-value"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="charts-container">
+                            <div class="chart-section">
+                                <h3>% Rostered</h3>
+                                <canvas id="sleeperRosteredChart"></canvas>
+                            </div>
+                            
+                            <div class="chart-section">
+                                <h3>Cambios en % Rostered</h3>
+                                <canvas id="sleeperRosteredChangeChart"></canvas>
+                            </div>
+                            
+                            <div class="chart-section">
+                                <h3>% Started</h3>
+                                <canvas id="sleeperStartedChart"></canvas>
+                            </div>
+                            
+                            <div class="chart-section">
+                                <h3>Cambios en % Started</h3>
+                                <canvas id="sleeperStartedChangeChart"></canvas>
+                            </div>
+                            
+                            <div class="chart-section">
+                                <h3>Adds</h3>
+                                <canvas id="sleeperAddsChart"></canvas>
+                            </div>
+                            
+                            <div class="chart-section">
+                                <h3>Drops</h3>
+                                <canvas id="sleeperDropsChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Configuration Modal -->
+    <div id="configModal" class="modal">
+        <div class="modal-content config-modal">
+            <div class="modal-header">
+                <h2>Configuración de Supabase</h2>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="config-form">
+                    <div class="form-group">
+                        <label for="supabaseUrl">URL de Supabase:</label>
+                        <input type="text" id="supabaseUrl" placeholder="https://tu-proyecto.supabase.co" class="config-input">
+                    </div>
+                    <div class="form-group">
+                        <label for="supabaseKey">Anon Key de Supabase:</label>
+                        <input type="password" id="supabaseKey" placeholder="Tu clave anónima" class="config-input">
+                    </div>
+                    <div class="form-actions">
+                        <button id="saveConfig" class="btn-primary">Guardar Configuración</button>
+                        <button id="testConnection" class="btn-secondary">Probar Conexión</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Configuration Button -->
+    <button id="configBtn" class="config-btn" title="Configurar Supabase">
+        <i class="fas fa-cog"></i>
+    </button>
+
+    <script src="sleepers.js"></script>
+</body>
+</html>

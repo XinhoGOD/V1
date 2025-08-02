@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fantasy Alert - NFL Fantasy Trends</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2.39.3/dist/umd/supabase.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Header -->
+        <header class="dashboard-header">
+            <div class="header-content">
+                <h1><i class="fas fa-bell"></i> Fantasy Alert - Cambios Críticos en Started</h1>
+                <div class="header-controls">
+                    <div class="alert-mode-selector">
+                        <label for="alertMode">Modo Alert:</label>
+                        <select id="alertMode" class="alert-select">
+                            <option value="started_change">Mayor Cambio Started</option>
+                            <option value="started_absolute">Mayor % Started</option>
+                            <option value="started_volatility">Mayor Volatilidad</option>
+                            <option value="started_momentum">Momentum Started</option>
+                        </select>
+                    </div>
+                    <button id="refreshAlert" class="btn-refresh">
+                        <i class="fas fa-sync-alt"></i> Actualizar
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-content">
+                <!-- Navigation Menu -->
+                <nav class="sidebar-nav">
+                    <h3><i class="fas fa-bars"></i> Navegación</h3>
+                    <ul class="nav-menu">
+                        <li>
+                            <a href="dashboard.html" class="nav-item">
+                                <i class="fas fa-tachometer-alt"></i>
+                                <span>Dashboard</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="index.html" class="nav-item">
+                                <i class="fas fa-users"></i>
+                                <span>Jugadores</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="sleepers.html" class="nav-item">
+                                <i class="fas fa-eye"></i>
+                                <span>Sleepers</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="trends.html" class="nav-item">
+                                <i class="fas fa-trending-up"></i>
+                                <span>Tendencias</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="fantasy-alert.html" class="nav-item active">
+                                <i class="fas fa-bell"></i>
+                                <span>Fantasy Alert</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="settings.html" class="nav-item">
+                                <i class="fas fa-cog"></i>
+                                <span>Configuración</span>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+
+                <!-- Alert Filters -->
+                <div class="filters-section">
+                    <h3><i class="fas fa-filter"></i> Filtros Alert</h3>
+                    
+                    <div class="filter-group">
+                        <label for="positionFilterAlert">Posición:</label>
+                        <select id="positionFilterAlert" class="filter-select">
+                            <option value="">Todas las posiciones</option>
+                            <option value="QB">QB</option>
+                            <option value="RB">RB</option>
+                            <option value="WR">WR</option>
+                            <option value="TE">TE</option>
+                            <option value="K">K</option>
+                            <option value="DEF">DEF</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="weekFilterAlert">Semana:</label>
+                        <select id="weekFilterAlert" class="filter-select">
+                            <option value="">Todas las semanas</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="minStartedChange">Min Cambio Started:</label>
+                        <input type="range" id="minStartedChange" min="-50" max="50" value="0" class="filter-range">
+                        <span id="minStartedChangeValue" class="range-value">0%</span>
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="minStarted">Min % Started:</label>
+                        <input type="range" id="minStarted" min="0" max="100" value="0" class="filter-range">
+                        <span id="minStartedValue" class="range-value">0%</span>
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="alertSeverity">Severidad Alert:</label>
+                        <select id="alertSeverity" class="filter-select">
+                            <option value="all">Todos los niveles</option>
+                            <option value="critical">🔴 Crítico (>15%)</option>
+                            <option value="high">🟠 Alto (10-15%)</option>
+                            <option value="medium">🟡 Medio (5-10%)</option>
+                            <option value="low">🟢 Bajo (<5%)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Alert Summary -->
+                <div class="alert-summary">
+                    <h3><i class="fas fa-exclamation-triangle"></i> Resumen Alert</h3>
+                    <div class="alert-stat-item critical-alerts">
+                        <span class="alert-stat-label">🔴 Alertas Críticas:</span>
+                        <span id="criticalAlerts" class="alert-stat-value">0</span>
+                    </div>
+                    <div class="alert-stat-item high-alerts">
+                        <span class="alert-stat-label">🟠 Alertas Altas:</span>
+                        <span id="highAlerts" class="alert-stat-value">0</span>
+                    </div>
+                    <div class="alert-stat-item medium-alerts">
+                        <span class="alert-stat-label">🟡 Alertas Medias:</span>
+                        <span id="mediumAlerts" class="alert-stat-value">0</span>
+                    </div>
+                    <div class="alert-stat-item total-alerts">
+                        <span class="alert-stat-label">Total Jugadores:</span>
+                        <span id="totalAlertsPlayers" class="alert-stat-value">0</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Loading Indicator -->
+            <div id="loadingAlert" class="loading-container">
+                <div class="loading-spinner"></div>
+                <p>Analizando cambios críticos en started...</p>
+            </div>
+
+            <!-- Alert Content -->
+            <div id="alertContent" class="alert-content" style="display: none;">
+                <!-- Alert Metrics -->
+                <div class="alert-metrics">
+                    <div class="metric-card alert-metric critical-metric">
+                        <div class="metric-icon">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="metric-content">
+                            <h3>Máximo Aumento Started</h3>
+                            <div class="metric-value" id="maxStartedIncrease">-</div>
+                            <div class="metric-change" id="maxStartedIncreasePlayer">-</div>
+                        </div>
+                    </div>
+
+                    <div class="metric-card alert-metric warning-metric">
+                        <div class="metric-icon">
+                            <i class="fas fa-arrow-down"></i>
+                        </div>
+                        <div class="metric-content">
+                            <h3>Máxima Caída Started</h3>
+                            <div class="metric-value" id="maxStartedDecrease">-</div>
+                            <div class="metric-change" id="maxStartedDecreasePlayer">-</div>
+                        </div>
+                    </div>
+
+                    <div class="metric-card alert-metric info-metric">
+                        <div class="metric-icon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <div class="metric-content">
+                            <h3>Mayor Volatilidad</h3>
+                            <div class="metric-value" id="maxVolatilityValue">-</div>
+                            <div class="metric-change" id="maxVolatilityPlayer">-</div>
+                        </div>
+                    </div>
+
+                    <div class="metric-card alert-metric success-metric">
+                        <div class="metric-icon">
+                            <i class="fas fa-fire"></i>
+                        </div>
+                        <div class="metric-content">
+                            <h3>Momentum Emergente</h3>
+                            <div class="metric-value" id="emergingMomentumValue">-</div>
+                            <div class="metric-change" id="emergingMomentumPlayer">-</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Alert Charts -->
+                <div class="alert-charts">
+                    <div class="chart-container">
+                        <h3><i class="fas fa-chart-bar"></i> Top Cambios en Started</h3>
+                        <canvas id="startedChangesChart"></canvas>
+                    </div>
+                    
+                    <div class="chart-container">
+                        <h3><i class="fas fa-chart-area"></i> Distribución de Severidad</h3>
+                        <canvas id="severityDistributionChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Alert Players List -->
+                <div class="alert-players-section">
+                    <div class="alert-players-header">
+                        <h2><i class="fas fa-list"></i> Jugadores con Alertas Críticas</h2>
+                        <div class="alert-sort-controls">
+                            <label for="alertSortBy">Ordenar por:</label>
+                            <select id="alertSortBy" class="sort-select">
+                                <option value="percent_started_change">Cambio Started</option>
+                                <option value="percent_started">% Started</option>
+                                <option value="volatility">Volatilidad</option>
+                                <option value="momentum">Momentum</option>
+                            </select>
+                            <button id="alertSortOrder" class="btn-sort" data-order="desc">
+                                <i class="fas fa-sort-amount-down"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="alertPlayersList" class="alert-players-list">
+                        <!-- Players will be populated here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Player Detail Modal -->
+            <div id="alertPlayerModal" class="modal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2 id="alertModalPlayerName">Alert - Detalles del Jugador</h2>
+                        <span class="close">&times;</span>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert-player-info">
+                            <div class="alert-info-grid">
+                                <div class="alert-info-item">
+                                    <span class="info-label">Nivel de Alert:</span>
+                                    <span id="alertModalSeverity" class="info-value alert-badge"></span>
+                                </div>
+                                <div class="alert-info-item">
+                                    <span class="info-label">Cambio Started:</span>
+                                    <span id="alertModalStartedChange" class="info-value"></span>
+                                </div>
+                                <div class="alert-info-item">
+                                    <span class="info-label">% Started Actual:</span>
+                                    <span id="alertModalCurrentStarted" class="info-value"></span>
+                                </div>
+                                <div class="alert-info-item">
+                                    <span class="info-label">% Started Anterior:</span>
+                                    <span id="alertModalPreviousStarted" class="info-value"></span>
+                                </div>
+                                <div class="alert-info-item">
+                                    <span class="info-label">Posición:</span>
+                                    <span id="alertModalPosition" class="info-value"></span>
+                                </div>
+                                <div class="alert-info-item">
+                                    <span class="info-label">Equipo:</span>
+                                    <span id="alertModalTeam" class="info-value"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="alert-charts-container">
+                            <div class="alert-chart-section">
+                                <h3>% Rostered</h3>
+                                <canvas id="alertRosteredChart"></canvas>
+                            </div>
+                            
+                            <div class="alert-chart-section">
+                                <h3>Cambios en % Rostered</h3>
+                                <canvas id="alertRosteredChangeChart"></canvas>
+                            </div>
+                            
+                            <div class="alert-chart-section">
+                                <h3>% Started</h3>
+                                <canvas id="alertStartedChart"></canvas>
+                            </div>
+                            
+                            <div class="alert-chart-section">
+                                <h3>Cambios en % Started</h3>
+                                <canvas id="alertStartedChangeChart"></canvas>
+                            </div>
+                            
+                            <div class="alert-chart-section">
+                                <h3>Adds</h3>
+                                <canvas id="alertAddsChart"></canvas>
+                            </div>
+                            
+                            <div class="alert-chart-section">
+                                <h3>Drops</h3>
+                                <canvas id="alertDropsChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Configuration Modal -->
+    <div id="configModal" class="modal">
+        <div class="modal-content config-modal">
+            <div class="modal-header">
+                <h2>Configuración de Supabase</h2>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="config-form">
+                    <div class="form-group">
+                        <label for="supabaseUrl">URL de Supabase:</label>
+                        <input type="text" id="supabaseUrl" placeholder="https://tu-proyecto.supabase.co" class="config-input">
+                    </div>
+                    <div class="form-group">
+                        <label for="supabaseKey">Anon Key de Supabase:</label>
+                        <input type="password" id="supabaseKey" placeholder="Tu clave anónima" class="config-input">
+                    </div>
+                    <div class="form-actions">
+                        <button id="saveConfig" class="btn-primary">Guardar Configuración</button>
+                        <button id="testConnection" class="btn-secondary">Probar Conexión</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Configuration Button -->
+    <button id="configBtn" class="config-btn" title="Configurar Supabase">
+        <i class="fas fa-cog"></i>
+    </button>
+
+    <script src="fantasy-alert.js"></script>
+</body>
+</html>

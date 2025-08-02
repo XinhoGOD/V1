@@ -1,0 +1,30 @@
+{
+  "supabase": {
+    "url": "https://rftkwpkwjfbhnoqsgjgi.supabase.co",
+    "anonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJmdGt3cGt3amZiaG5vcXNnamdpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM3MzkyOTAsImV4cCI6MjA2OTMxNTI5MH0.ZB3KLDZEQ-9Hc8agssFnyFk-PvStXJGGHO75TizkgcU"
+  },
+  "dashboard": {
+    "title": "NFL Fantasy Trends Dashboard",
+    "refreshInterval": 300000,
+    "defaultFilters": {
+      "position": "",
+      "team": "",
+      "week": "",
+      "minRostered": 0
+    },
+    "chartColors": {
+      "rostered": "#3b82f6",
+      "rosteredChange": "#10b981",
+      "started": "#f59e0b",
+      "startedChange": "#ef4444",
+      "adds": "#8b5cf6",
+      "drops": "#dc2626"
+    }
+  },
+  "api": {
+    "table": "nfl_fantasy_trends",
+    "maxResults": 1000,
+    "orderBy": "scraped_at",
+    "ascending": false
+  }
+}
