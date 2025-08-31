@@ -60,6 +60,9 @@ const alertElements = {
     alertModalCurrentStarted: document.getElementById('alertModalCurrentStarted'),
     alertModalPreviousStarted: document.getElementById('alertModalPreviousStarted'),
     alertModalStartedRadio: document.getElementById('alertModalStartedRadio'),
+    alertModalMinStarted: document.getElementById('alertModalMinStarted'),
+    alertModalMaxStarted: document.getElementById('alertModalMaxStarted'),
+    alertModalRadioRange: document.getElementById('alertModalRadioRange'),
     alertModalPosition: document.getElementById('alertModalPosition'),
     alertModalTeam: document.getElementById('alertModalTeam')
 };
@@ -677,11 +680,16 @@ async function showAlertPlayerDetails(playerId) {
     // Mostrar Radio Started
     alertElements.alertModalStartedRadio.textContent = `${(player.startedRadio || 0).toFixed(1)}`;
     
-    // Obtener datos históricos del jugador desde la base de datos
-    await loadAlertPlayerHistory(playerId);
+    // Inicializar valores detallados mientras se calculan
+    alertElements.alertModalMinStarted.textContent = '0.0%';
+    alertElements.alertModalMaxStarted.textContent = '0.0%';
+    alertElements.alertModalRadioRange.textContent = `${(player.startedRadio || 0).toFixed(1)}%`;
     
     // Mostrar modal
     alertElements.alertPlayerModal.style.display = 'block';
+    
+    // Obtener datos históricos del jugador desde la base de datos
+    await loadAlertPlayerHistory(playerId);
 }
 
 // Cargar historial del jugador para Fantasy Alert
@@ -697,6 +705,24 @@ async function loadAlertPlayerHistory(playerId) {
             throw error;
         }
         
+        // Calcular valores mínimo, máximo y radio para mostrar
+        if (data && data.length > 0) {
+            const startedValues = data
+                .map(d => d.percent_started || 0)
+                .filter(val => val !== null && val !== undefined);
+            
+            if (startedValues.length > 0) {
+                const minStarted = Math.min(...startedValues);
+                const maxStarted = Math.max(...startedValues);
+                const radioRange = maxStarted - minStarted;
+                
+                // Actualizar valores en el modal
+                alertElements.alertModalMinStarted.textContent = `${minStarted.toFixed(1)}%`;
+                alertElements.alertModalMaxStarted.textContent = `${maxStarted.toFixed(1)}%`;
+                alertElements.alertModalRadioRange.textContent = `${radioRange.toFixed(1)}%`;
+            }
+        }
+        
         createAlertPlayerCharts(data);
         
     } catch (error) {
@@ -705,14 +731,19 @@ async function loadAlertPlayerHistory(playerId) {
     }
 }
 
-// Crear gráficos para el modal del jugador (mismos que en jugadores)
+// Crear gráficos para el modal del jugador con tamaño fijo
 function createAlertPlayerCharts(playerHistory) {
     // Destruir gráficos existentes
     Object.keys(alertCharts).forEach(key => {
         if (alertCharts[key] && key.includes('alert')) {
             alertCharts[key].destroy();
+            delete alertCharts[key];
         }
     });
+    
+    if (!playerHistory || playerHistory.length === 0) {
+        return;
+    }
     
     // Usar todos los datos históricos disponibles
     const chartData = playerHistory;
@@ -724,307 +755,198 @@ function createAlertPlayerCharts(playerHistory) {
     const addsData = chartData.map(d => d.adds || 0);
     const dropsData = chartData.map(d => d.drops || 0);
     
-    // 1. Gráfico % Rostered
-    const rosteredCtx = document.getElementById('alertRosteredChart').getContext('2d');
-    alertCharts.alertRostered = new Chart(rosteredCtx, {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: '% Rostered',
-                data: rosteredData,
-                borderColor: '#3b82f6',
-                backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                borderWidth: 2,
-                fill: true,
-                tension: 0.4
-            }]
+    const chartOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { display: false }
         },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false }
-            },
-            scales: {
-                x: {
+        scales: {
+            x: {
+                display: true,
+                title: {
                     display: true,
-                    title: {
-                        display: true,
-                        text: 'Fecha'
-                    }
-                },
-                y: { 
-                    beginAtZero: true, 
-                    max: 100,
-                    title: {
-                        display: true,
-                        text: 'Porcentaje (%)'
-                    }
+                    text: 'Fecha'
                 }
             },
-            elements: {
-                line: {
-                    tension: 0.4
-                },
-                point: {
-                    radius: 4,
-                    hoverRadius: 6
+            y: { 
+                beginAtZero: true,
+                title: {
+                    display: true,
+                    text: 'Valor'
                 }
             }
+        },
+        elements: {
+            line: {
+                tension: 0.4
+            },
+            point: {
+                radius: 3,
+                hoverRadius: 5
+            }
+        },
+        interaction: {
+            intersect: false,
+            mode: 'index'
         }
-    });
+    };
+    
+    // 1. Gráfico % Rostered
+    const rosteredCtx = document.getElementById('alertRosteredChart');
+    if (rosteredCtx) {
+        alertCharts.alertRostered = new Chart(rosteredCtx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: '% Rostered',
+                    data: rosteredData,
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    borderWidth: 2,
+                    fill: true
+                }]
+            },
+            options: {
+                ...chartOptions,
+                scales: {
+                    ...chartOptions.scales,
+                    y: { ...chartOptions.scales.y, max: 100, title: { display: true, text: 'Porcentaje (%)' }}
+                }
+            }
+        });
+    }
     
     // 2. Gráfico Cambios % Rostered
-    const rosteredChangeCtx = document.getElementById('alertRosteredChangeChart').getContext('2d');
-    alertCharts.alertRosteredChange = new Chart(rosteredChangeCtx, {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: 'Cambio % Rostered',
-                data: rosteredChangeData,
-                borderColor: '#10b981',
-                backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                borderWidth: 2,
-                fill: true,
-                tension: 0.4
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false }
+    const rosteredChangeCtx = document.getElementById('alertRosteredChangeChart');
+    if (rosteredChangeCtx) {
+        alertCharts.alertRosteredChange = new Chart(rosteredChangeCtx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Cambio % Rostered',
+                    data: rosteredChangeData,
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    borderWidth: 2,
+                    fill: true
+                }]
             },
-            scales: {
-                x: {
-                    display: true,
-                    title: {
-                        display: true,
-                        text: 'Fecha'
-                    }
-                },
-                y: { 
-                    beginAtZero: true,
-                    title: {
-                        display: true,
-                        text: 'Cambio (%)'
-                    }
-                }
-            },
-            elements: {
-                line: {
-                    tension: 0.4
-                },
-                point: {
-                    radius: 4,
-                    hoverRadius: 6
+            options: {
+                ...chartOptions,
+                scales: {
+                    ...chartOptions.scales,
+                    y: { ...chartOptions.scales.y, title: { display: true, text: 'Cambio (%)' }}
                 }
             }
-        }
-    });
+        });
+    }
     
     // 3. Gráfico % Started
-    const startedCtx = document.getElementById('alertStartedChart').getContext('2d');
-    alertCharts.alertStarted = new Chart(startedCtx, {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: '% Started',
-                data: startedData,
-                borderColor: '#10b981',
-                backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                borderWidth: 2,
-                fill: true,
-                tension: 0.4
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false }
+    const startedCtx = document.getElementById('alertStartedChart');
+    if (startedCtx) {
+        alertCharts.alertStarted = new Chart(startedCtx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: '% Started',
+                    data: startedData,
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    borderWidth: 2,
+                    fill: true
+                }]
             },
-            scales: {
-                x: {
-                    display: true,
-                    title: {
-                        display: true,
-                        text: 'Fecha'
-                    }
-                },
-                y: { 
-                    beginAtZero: true, 
-                    max: 100,
-                    title: {
-                        display: true,
-                        text: 'Porcentaje (%)'
-                    }
-                }
-            },
-            elements: {
-                line: {
-                    tension: 0.4
-                },
-                point: {
-                    radius: 4,
-                    hoverRadius: 6
+            options: {
+                ...chartOptions,
+                scales: {
+                    ...chartOptions.scales,
+                    y: { ...chartOptions.scales.y, max: 100, title: { display: true, text: 'Porcentaje (%)' }}
                 }
             }
-        }
-    });
+        });
+    }
     
     // 4. Gráfico Cambios % Started
-    const startedChangeCtx = document.getElementById('alertStartedChangeChart').getContext('2d');
-    alertCharts.alertStartedChange = new Chart(startedChangeCtx, {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: 'Cambio % Started',
-                data: startedChangeData,
-                borderColor: '#8b5cf6',
-                backgroundColor: 'rgba(139, 92, 246, 0.1)',
-                borderWidth: 2,
-                fill: true,
-                tension: 0.4
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false }
+    const startedChangeCtx = document.getElementById('alertStartedChangeChart');
+    if (startedChangeCtx) {
+        alertCharts.alertStartedChange = new Chart(startedChangeCtx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Cambio % Started',
+                    data: startedChangeData,
+                    borderColor: '#8b5cf6',
+                    backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                    borderWidth: 2,
+                    fill: true
+                }]
             },
-            scales: {
-                x: {
-                    display: true,
-                    title: {
-                        display: true,
-                        text: 'Fecha'
-                    }
-                },
-                y: { 
-                    beginAtZero: true,
-                    title: {
-                        display: true,
-                        text: 'Cambio (%)'
-                    }
-                }
-            },
-            elements: {
-                line: {
-                    tension: 0.4
-                },
-                point: {
-                    radius: 4,
-                    hoverRadius: 6
+            options: {
+                ...chartOptions,
+                scales: {
+                    ...chartOptions.scales,
+                    y: { ...chartOptions.scales.y, title: { display: true, text: 'Cambio (%)' }}
                 }
             }
-        }
-    });
+        });
+    }
     
     // 5. Gráfico Adds
-    const addsCtx = document.getElementById('alertAddsChart').getContext('2d');
-    alertCharts.alertAdds = new Chart(addsCtx, {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: 'Adds',
-                data: addsData,
-                borderColor: '#f59e0b',
-                backgroundColor: 'rgba(245, 158, 11, 0.1)',
-                borderWidth: 2,
-                fill: true,
-                tension: 0.4
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false }
+    const addsCtx = document.getElementById('alertAddsChart');
+    if (addsCtx) {
+        alertCharts.alertAdds = new Chart(addsCtx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Adds',
+                    data: addsData,
+                    borderColor: '#f59e0b',
+                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                    borderWidth: 2,
+                    fill: true
+                }]
             },
-            scales: {
-                x: {
-                    display: true,
-                    title: {
-                        display: true,
-                        text: 'Fecha'
-                    }
-                },
-                y: { 
-                    beginAtZero: true,
-                    title: {
-                        display: true,
-                        text: 'Cantidad'
-                    }
-                }
-            },
-            elements: {
-                line: {
-                    tension: 0.4
-                },
-                point: {
-                    radius: 4,
-                    hoverRadius: 6
+            options: {
+                ...chartOptions,
+                scales: {
+                    ...chartOptions.scales,
+                    y: { ...chartOptions.scales.y, title: { display: true, text: 'Cantidad' }}
                 }
             }
-        }
-    });
+        });
+    }
     
     // 6. Gráfico Drops
-    const dropsCtx = document.getElementById('alertDropsChart').getContext('2d');
-    alertCharts.alertDrops = new Chart(dropsCtx, {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: 'Drops',
-                data: dropsData,
-                borderColor: '#ef4444',
-                backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                borderWidth: 2,
-                fill: true,
-                tension: 0.4
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false }
+    const dropsCtx = document.getElementById('alertDropsChart');
+    if (dropsCtx) {
+        alertCharts.alertDrops = new Chart(dropsCtx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Drops',
+                    data: dropsData,
+                    borderColor: '#ef4444',
+                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                    borderWidth: 2,
+                    fill: true
+                }]
             },
-            scales: {
-                x: {
-                    display: true,
-                    title: {
-                        display: true,
-                        text: 'Fecha'
-                    }
-                },
-                y: { 
-                    beginAtZero: true,
-                    title: {
-                        display: true,
-                        text: 'Cantidad'
-                    }
-                }
-            },
-            elements: {
-                line: {
-                    tension: 0.4
-                },
-                point: {
-                    radius: 4,
-                    hoverRadius: 6
+            options: {
+                ...chartOptions,
+                scales: {
+                    ...chartOptions.scales,
+                    y: { ...chartOptions.scales.y, title: { display: true, text: 'Cantidad' }}
                 }
             }
-        }
-    });
+        });
+    }
 }
 
 // Ordenar jugadores de alertas
