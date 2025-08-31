@@ -126,18 +126,18 @@
                     </div>
 
                     <div class="filter-group">
-                        <label for="minStartedRange">Min Rango Started:</label>
+                        <label for="minStartedRange">Min Rango Total:</label>
                         <input type="range" id="minStartedRange" min="0" max="50" value="0" class="filter-range">
                         <span id="minStartedRangeValue" class="range-value">0%</span>
                     </div>
 
                     <div class="filter-group">
-                        <label for="rangeTrendFilter">Tendencia de Rango:</label>
+                        <label for="rangeTrendFilter">Tendencia General:</label>
                         <select id="rangeTrendFilter" class="filter-select">
                             <option value="all">Todas las tendencias</option>
-                            <option value="up">📈 Ascendente (Subiendo)</option>
-                            <option value="down">📉 Descendente (Bajando)</option>
-                            <option value="neutral">➡️ Neutral</option>
+                            <option value="up">📈 De Menor a Mayor (Ascendente)</option>
+                            <option value="down">📉 De Mayor a Menor (Descendente)</option>
+                            <option value="neutral">➡️ Estable</option>
                         </select>
                     </div>
                 </div>
@@ -293,10 +293,6 @@
                                 <div class="alert-info-item">
                                     <span class="info-label">Equipo:</span>
                                     <span id="alertModalTeam" class="info-value"></span>
-                                </div>
-                                <div class="alert-info-item">
-                                    <span class="info-label">Rango Started:</span>
-                                    <span id="alertModalStartedRange" class="info-value started-range"></span>
                                 </div>
                             </div>
                             

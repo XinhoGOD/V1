@@ -60,7 +60,6 @@ const alertElements = {
     alertModalStartedChange: document.getElementById('alertModalStartedChange'),
     alertModalCurrentStarted: document.getElementById('alertModalCurrentStarted'),
     alertModalPreviousStarted: document.getElementById('alertModalPreviousStarted'),
-    alertModalStartedRange: document.getElementById('alertModalStartedRange'),
     alertModalMinStarted: document.getElementById('alertModalMinStarted'),
     alertModalMaxStarted: document.getElementById('alertModalMaxStarted'),
     alertModalRadioRange: document.getElementById('alertModalRadioRange'),
@@ -683,16 +682,10 @@ function displayAlertPlayers() {
                         </span>
                     </div>
                     <div class="alert-metric-item">
-                        <span class="alert-metric-label">Rango Started:</span>
-                        <span class="alert-metric-value started-range">
-                            ${(player.startedRange || 0).toFixed(1)}%
-                            ${player.rangeDirection === 'up' ? '📈' : player.rangeDirection === 'down' ? '📉' : '➡️'}
-                        </span>
-                    </div>
-                    <div class="alert-metric-item">
-                        <span class="alert-metric-label">Tendencia:</span>
+                        <span class="alert-metric-label">Tendencia General:</span>
                         <span class="alert-metric-value ${player.rangeDirection === 'up' ? 'positive-change' : player.rangeDirection === 'down' ? 'negative-change' : ''}">
                             ${player.rangeTrend > 0 ? '+' : ''}${(player.rangeTrend || 0).toFixed(1)}%
+                            ${player.rangeDirection === 'up' ? '📈' : player.rangeDirection === 'down' ? '📉' : '➡️'}
                         </span>
                     </div>
                 </div>
@@ -722,18 +715,14 @@ async function showAlertPlayerDetails(playerId) {
     alertElements.alertModalPosition.textContent = player.position || 'N/A';
     alertElements.alertModalTeam.textContent = player.team || 'N/A';
     
-    // Mostrar Rango Started
-    alertElements.alertModalStartedRange.textContent = `${(player.startedRange || 0).toFixed(1)}%`;
-    
-    // Mostrar Rango Started con tendencia direccional
-    const rangeValue = (player.startedRange || 0).toFixed(1);
+    // Mostrar Tendencia General
+    const rangeValue = (player.rangeTotal || 0).toFixed(1);
     const trendEmoji = player.rangeDirection === 'up' ? '📈' : player.rangeDirection === 'down' ? '📉' : '➡️';
-    const trendText = player.rangeDirection === 'up' ? ' (Ascendente)' : player.rangeDirection === 'down' ? ' (Descendente)' : ' (Neutral)';
     
-    alertElements.alertModalStartedRange.innerHTML = `${rangeValue}% ${trendEmoji}<small>${trendText}</small>`;
-    alertElements.alertModalMinStarted.textContent = '0.0%';
-    alertElements.alertModalMaxStarted.textContent = '0.0%';
-    alertElements.alertModalRadioRange.textContent = `${(player.startedRange || 0).toFixed(1)}%`;
+    alertElements.alertModalGeneralTrend.innerHTML = `${rangeValue}% ${trendEmoji}`;
+    
+    // Mostrar Rango Total
+    alertElements.alertModalTotalRange.textContent = `${(player.rangeTotal || 0).toFixed(1)}%`;
     
     // Mostrar modal
     alertElements.alertPlayerModal.style.display = 'block';
@@ -767,9 +756,7 @@ async function loadAlertPlayerHistory(playerId) {
                 const radioRange = maxStarted - minStarted;
                 
                 // Actualizar valores en el modal
-                alertElements.alertModalMinStarted.textContent = `${minStarted.toFixed(1)}%`;
-                alertElements.alertModalMaxStarted.textContent = `${maxStarted.toFixed(1)}%`;
-                alertElements.alertModalRadioRange.textContent = `${radioRange.toFixed(1)}%`;
+                alertElements.alertModalTotalRange.textContent = `${radioRange.toFixed(1)}%`;
                 
                 // Actualizar tendencia general
                 const firstValue = data[0].percent_started || 0;
