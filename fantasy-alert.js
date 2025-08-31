@@ -194,17 +194,17 @@ async function loadAlertData() {
 }
 
 // Procesar datos para alertas
-async function processAlertData() {
+function processAlertData() {
     // Calcular métricas adicionales para cada jugador
-    for (const player of allAlertData) {
+    allAlertData.forEach(player => {
         // Calcular volatilidad (valor absoluto del cambio)
         player.volatility = Math.abs(player.percent_started_change || 0);
         
         // Calcular momentum (combinando cambio started y rostered)
         player.momentum = (player.percent_started_change || 0) + ((player.percent_rostered_change || 0) * 0.3);
         
-        // Calcular Radio Started (diferencia entre max y min started histórico)
-        player.startedRadio = await calculateStartedRadio(player.player_id);
+        // Inicializar Radio Started en 0 por ahora (se calculará después)
+        player.startedRadio = 0;
         
         // Determinar severidad de la alerta
         const startedChange = Math.abs(player.percent_started_change || 0);
@@ -221,7 +221,10 @@ async function processAlertData() {
             player.alertSeverity = 'low';
             player.alertLevel = '🟢 Bajo';
         }
-    }
+    });
+    
+    // Calcular Radio Started después de que se muestren los jugadores
+    calculateAllStartedRadios();
     
     filteredAlertData = [...allAlertData];
     applyAlertFilters();
@@ -284,6 +287,52 @@ async function calculateStartedRadio(playerId) {
     } catch (error) {
         console.error('Error calculando Radio Started:', error);
         return 0;
+    }
+}
+
+// Calcular Radio Started para todos los jugadores (sin bloquear la UI)
+async function calculateAllStartedRadios() {
+    try {
+        // Obtener datos históricos para todos los jugadores de una vez
+        const playerIds = allAlertData.map(p => p.player_id);
+        
+        const { data, error } = await supabaseClient
+            .from('nfl_fantasy_trends')
+            .select('player_id, percent_started')
+            .in('player_id', playerIds)
+            .not('percent_started', 'is', null);
+        
+        if (error || !data) {
+            console.error('Error obteniendo datos históricos:', error);
+            return;
+        }
+        
+        // Agrupar datos por jugador
+        const playerHistoricalData = {};
+        data.forEach(row => {
+            if (!playerHistoricalData[row.player_id]) {
+                playerHistoricalData[row.player_id] = [];
+            }
+            playerHistoricalData[row.player_id].push(row.percent_started);
+        });
+        
+        // Calcular Radio Started para cada jugador
+        allAlertData.forEach(player => {
+            const historicalData = playerHistoricalData[player.player_id];
+            if (historicalData && historicalData.length > 1) {
+                const maxStarted = Math.max(...historicalData);
+                const minStarted = Math.min(...historicalData);
+                player.startedRadio = maxStarted - minStarted;
+            } else {
+                player.startedRadio = 0;
+            }
+        });
+        
+        // Actualizar la visualización con los nuevos datos
+        displayAlertPlayers();
+        
+    } catch (error) {
+        console.error('Error calculando Radio Started para todos:', error);
     }
 }
 
