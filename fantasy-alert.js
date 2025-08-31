@@ -511,6 +511,12 @@ function createStartedChangesChart() {
             responsive: true,
             maintainAspectRatio: false,
             indexAxis: 'y',
+            layout: {
+                padding: {
+                    top: 10,
+                    bottom: 10
+                }
+            },
             plugins: {
                 legend: {
                     display: false
@@ -574,6 +580,12 @@ function createSeverityDistributionChart() {
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            layout: {
+                padding: {
+                    top: 10,
+                    bottom: 10
+                }
+            },
             plugins: {
                 legend: {
                     position: 'bottom'
@@ -680,7 +692,8 @@ async function showAlertPlayerDetails(playerId) {
     // Mostrar Rango Started
     alertElements.alertModalStartedRange.textContent = `${(player.startedRange || 0).toFixed(1)}%`;
     
-    // Inicializar valores detallados mientras se calculan
+    // Mostrar Radio Started
+    alertElements.alertModalStartedRange.textContent = `${(player.startedRange || 0).toFixed(1)}%`;
     alertElements.alertModalMinStarted.textContent = '0.0%';
     alertElements.alertModalMaxStarted.textContent = '0.0%';
     alertElements.alertModalRadioRange.textContent = `${(player.startedRange || 0).toFixed(1)}%`;
@@ -758,6 +771,12 @@ function createAlertPlayerCharts(playerHistory) {
     const chartOptions = {
         responsive: true,
         maintainAspectRatio: false,
+        layout: {
+            padding: {
+                top: 10,
+                bottom: 10
+            }
+        },
         plugins: {
             legend: { display: false }
         },
@@ -789,6 +808,13 @@ function createAlertPlayerCharts(playerHistory) {
         interaction: {
             intersect: false,
             mode: 'index'
+        },
+        // Force chart container dimensions
+        onResize: function(chart, size) {
+            if (size.height > 250) {
+                chart.canvas.style.height = '220px';
+                chart.resize(size.width, 220);
+            }
         }
     };
     

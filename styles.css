@@ -1050,6 +1050,7 @@ body::before {
     width: 100% !important;
     height: 250px !important;
     max-height: 250px !important;
+    min-height: 200px !important;
     border-radius: var(--radius-xl);
 }
 
@@ -1136,17 +1137,96 @@ body::before {
     background-clip: text;
 }
 
-/* Responsive adjustments */
-@media (max-width: 768px) {
-    .alert-charts-container {
-        grid-template-columns: 1fr;
-    }
-    
-    .radio-started-details {
-        grid-template-columns: 1fr;
-    }
-    
-    .alert-info-grid {
-        grid-template-columns: 1fr;
-    }
+/* ==========================================================================
+   GLOBAL CHART FIXES - PREVENT EXPANSION
+   ========================================================================== */
+
+/* Critical Chart Size Controls - Highest Priority */
+canvas {
+    max-width: 100% !important;
+    max-height: 400px !important;
+    width: 100% !important;
+    height: auto !important;
 }
+
+/* Specific Chart Section Fixes */
+.chart-section canvas,
+.alert-chart-section canvas {
+    width: 100% !important;
+    height: 250px !important;
+    max-height: 250px !important;
+    min-height: 200px !important;
+    border-radius: var(--radius-xl);
+}
+
+/* Dashboard Chart Container Fixes */
+.chart-container canvas {
+    width: 100% !important;
+    height: 300px !important;
+    max-height: 300px !important;
+    min-height: 250px !important;
+    border-radius: var(--radius-xl);
+}
+
+/* Modal Charts Specific Fix - Extra Specificity */
+.modal .chart-section canvas,
+.modal .alert-chart-section canvas,
+.modal-body .chart-section canvas,
+.modal-body .alert-chart-section canvas {
+    width: 100% !important;
+    height: 220px !important;
+    max-height: 220px !important;
+    min-height: 180px !important;
+    border-radius: var(--radius-xl);
+}
+
+/* Fantasy Alert Charts Container Fix */
+.alert-charts-container canvas,
+.alert-charts canvas {
+    width: 100% !important;
+    height: 280px !important;
+    max-height: 280px !important;
+    min-height: 220px !important;
+}
+
+/* Sleeper Charts Fix */
+.sleeper-charts canvas {
+    width: 100% !important;
+    height: 300px !important;
+    max-height: 300px !important;
+    min-height: 250px !important;
+}
+
+/* Chart.js Responsive Override */
+.chartjs-render-monitor {
+    animation: none !important;
+}
+
+/* Force Chart Containers to Maintain Size */
+.chart-section,
+.alert-chart-section,
+.chart-container {
+    position: relative;
+    overflow: hidden;
+    min-height: 250px;
+    max-height: 400px;
+}
+
+.modal .chart-section,
+.modal .alert-chart-section {
+    min-height: 200px;
+    max-height: 280px;
+}
+
+/* ==========================================================================
+   END CHART FIXES
+   ========================================================================== */
+
+/* Chart Fix End */
+.chart-fix-end {
+    /* Placeholder for valid CSS */
+    display: block;
+}
+}
+
+/*# sourceMappingURL=style.css.map */
