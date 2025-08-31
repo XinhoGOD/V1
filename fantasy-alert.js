@@ -60,12 +60,10 @@ const alertElements = {
     alertModalStartedChange: document.getElementById('alertModalStartedChange'),
     alertModalCurrentStarted: document.getElementById('alertModalCurrentStarted'),
     alertModalPreviousStarted: document.getElementById('alertModalPreviousStarted'),
-    alertModalMinStarted: document.getElementById('alertModalMinStarted'),
-    alertModalMaxStarted: document.getElementById('alertModalMaxStarted'),
-    alertModalRadioRange: document.getElementById('alertModalRadioRange'),
-    alertModalRangeTrend: document.getElementById('alertModalRangeTrend'),
     alertModalPosition: document.getElementById('alertModalPosition'),
-    alertModalTeam: document.getElementById('alertModalTeam')
+    alertModalTeam: document.getElementById('alertModalTeam'),
+    alertModalGeneralTrend: document.getElementById('alertModalGeneralTrend'),
+    alertModalTotalRange: document.getElementById('alertModalTotalRange')
 };
 
 // Inicialización
