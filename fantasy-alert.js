@@ -29,6 +29,7 @@ const alertElements = {
     minStartedValue: document.getElementById('minStartedValue'),
     minStartedRange: document.getElementById('minStartedRange'),
     minStartedRangeValue: document.getElementById('minStartedRangeValue'),
+    rangeTrendFilter: document.getElementById('rangeTrendFilter'),
     alertSeverity: document.getElementById('alertSeverity'),
     
     // Métricas
@@ -63,6 +64,7 @@ const alertElements = {
     alertModalMinStarted: document.getElementById('alertModalMinStarted'),
     alertModalMaxStarted: document.getElementById('alertModalMaxStarted'),
     alertModalRadioRange: document.getElementById('alertModalRadioRange'),
+    alertModalRangeTrend: document.getElementById('alertModalRangeTrend'),
     alertModalPosition: document.getElementById('alertModalPosition'),
     alertModalTeam: document.getElementById('alertModalTeam')
 };
@@ -114,6 +116,7 @@ function setupAlertEventListeners() {
     alertElements.minStartedChange.addEventListener('input', updateStartedChangeFilter);
     alertElements.minStarted.addEventListener('input', updateStartedFilter);
     alertElements.minStartedRange.addEventListener('input', updateStartedRangeFilter);
+    alertElements.rangeTrendFilter.addEventListener('change', applyAlertFilters);
     alertElements.alertSeverity.addEventListener('change', applyAlertFilters);
     
     // Ordenamiento
@@ -325,9 +328,28 @@ async function calculateAllStartedRanges() {
             if (historicalData && historicalData.length > 1) {
                 const maxStarted = Math.max(...historicalData);
                 const minStarted = Math.min(...historicalData);
-                player.startedRange = maxStarted - minStarted;
+                const range = maxStarted - minStarted;
+                
+                // Calcular tendencia direccional
+                const firstValue = historicalData[0];
+                const lastValue = historicalData[historicalData.length - 1];
+                const trend = lastValue - firstValue;
+                
+                // Determinar si está más cerca del máximo o mínimo actualmente
+                const currentValue = player.percent_started || 0;
+                const distanceToMax = Math.abs(currentValue - maxStarted);
+                const distanceToMin = Math.abs(currentValue - minStarted);
+                const isNearMax = distanceToMax < distanceToMin;
+                
+                player.startedRange = range;
+                player.rangeTrend = trend; // Positivo = subiendo, Negativo = bajando
+                player.isNearMax = isNearMax; // true si está cerca del máximo
+                player.rangeDirection = trend > 0 ? 'up' : 'down';
             } else {
                 player.startedRange = 0;
+                player.rangeTrend = 0;
+                player.isNearMax = false;
+                player.rangeDirection = 'neutral';
             }
         });
         
@@ -347,6 +369,7 @@ function applyAlertFilters() {
         const minStartedChange = parseFloat(alertElements.minStartedChange.value);
         const minStarted = parseFloat(alertElements.minStarted.value);
         const minStartedRange = parseFloat(alertElements.minStartedRange.value);
+        const rangeTrend = alertElements.rangeTrendFilter.value;
         const severity = alertElements.alertSeverity.value;
         
         // Filtrar por posición
@@ -363,6 +386,9 @@ function applyAlertFilters() {
         
         // Filtrar por Rango Started mínimo
         if ((player.startedRange || 0) < minStartedRange) return false;
+        
+        // Filtrar por tendencia de rango
+        if (rangeTrend !== 'all' && player.rangeDirection !== rangeTrend) return false;
         
         // Filtrar por severidad
         if (severity !== 'all' && player.alertSeverity !== severity) return false;
@@ -660,6 +686,13 @@ function displayAlertPlayers() {
                         <span class="alert-metric-label">Rango Started:</span>
                         <span class="alert-metric-value started-range">
                             ${(player.startedRange || 0).toFixed(1)}%
+                            ${player.rangeDirection === 'up' ? '📈' : player.rangeDirection === 'down' ? '📉' : '➡️'}
+                        </span>
+                    </div>
+                    <div class="alert-metric-item">
+                        <span class="alert-metric-label">Tendencia:</span>
+                        <span class="alert-metric-value ${player.rangeDirection === 'up' ? 'positive-change' : player.rangeDirection === 'down' ? 'negative-change' : ''}">
+                            ${player.rangeTrend > 0 ? '+' : ''}${(player.rangeTrend || 0).toFixed(1)}%
                         </span>
                     </div>
                 </div>
@@ -692,8 +725,12 @@ async function showAlertPlayerDetails(playerId) {
     // Mostrar Rango Started
     alertElements.alertModalStartedRange.textContent = `${(player.startedRange || 0).toFixed(1)}%`;
     
-    // Mostrar Radio Started
-    alertElements.alertModalStartedRange.textContent = `${(player.startedRange || 0).toFixed(1)}%`;
+    // Mostrar Rango Started con tendencia direccional
+    const rangeValue = (player.startedRange || 0).toFixed(1);
+    const trendEmoji = player.rangeDirection === 'up' ? '📈' : player.rangeDirection === 'down' ? '📉' : '➡️';
+    const trendText = player.rangeDirection === 'up' ? ' (Ascendente)' : player.rangeDirection === 'down' ? ' (Descendente)' : ' (Neutral)';
+    
+    alertElements.alertModalStartedRange.innerHTML = `${rangeValue}% ${trendEmoji}<small>${trendText}</small>`;
     alertElements.alertModalMinStarted.textContent = '0.0%';
     alertElements.alertModalMaxStarted.textContent = '0.0%';
     alertElements.alertModalRadioRange.textContent = `${(player.startedRange || 0).toFixed(1)}%`;
@@ -733,6 +770,28 @@ async function loadAlertPlayerHistory(playerId) {
                 alertElements.alertModalMinStarted.textContent = `${minStarted.toFixed(1)}%`;
                 alertElements.alertModalMaxStarted.textContent = `${maxStarted.toFixed(1)}%`;
                 alertElements.alertModalRadioRange.textContent = `${radioRange.toFixed(1)}%`;
+                
+                // Actualizar tendencia general
+                const firstValue = data[0].percent_started || 0;
+                const lastValue = data[data.length - 1].percent_started || 0;
+                const generalTrend = lastValue - firstValue;
+                
+                let trendText = '';
+                let trendClass = '';
+                
+                if (generalTrend > 2) {
+                    trendText = `📈 +${generalTrend.toFixed(1)}% (Ascendente)`;
+                    trendClass = 'positive-change';
+                } else if (generalTrend < -2) {
+                    trendText = `📉 ${generalTrend.toFixed(1)}% (Descendente)`;
+                    trendClass = 'negative-change';
+                } else {
+                    trendText = `➡️ ${generalTrend.toFixed(1)}% (Estable)`;
+                    trendClass = '';
+                }
+                
+                alertElements.alertModalRangeTrend.textContent = trendText;
+                alertElements.alertModalRangeTrend.className = `radio-detail-value range-trend ${trendClass}`;
             }
         }
         

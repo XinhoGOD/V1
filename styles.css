@@ -1084,7 +1084,7 @@ body::before {
 /* Premium Radio Started Display */
 .radio-started-details {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
     gap: var(--space-4);
     margin: var(--space-6) 0;
     padding: var(--space-6);
@@ -1135,6 +1135,19 @@ body::before {
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+}
+
+.radio-detail-value.range-trend {
+    font-size: var(--text-base);
+    font-weight: var(--font-weight-bold);
+}
+
+.radio-detail-value.range-trend.positive-change {
+    color: var(--success-600);
+}
+
+.radio-detail-value.range-trend.negative-change {
+    color: var(--danger-600);
 }
 
 /* ==========================================================================
