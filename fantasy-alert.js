@@ -27,8 +27,8 @@ const alertElements = {
     minStartedChangeValue: document.getElementById('minStartedChangeValue'),
     minStarted: document.getElementById('minStarted'),
     minStartedValue: document.getElementById('minStartedValue'),
-    minStartedRadio: document.getElementById('minStartedRadio'),
-    minStartedRadioValue: document.getElementById('minStartedRadioValue'),
+    minStartedRange: document.getElementById('minStartedRange'),
+    minStartedRangeValue: document.getElementById('minStartedRangeValue'),
     alertSeverity: document.getElementById('alertSeverity'),
     
     // Métricas
@@ -59,7 +59,7 @@ const alertElements = {
     alertModalStartedChange: document.getElementById('alertModalStartedChange'),
     alertModalCurrentStarted: document.getElementById('alertModalCurrentStarted'),
     alertModalPreviousStarted: document.getElementById('alertModalPreviousStarted'),
-    alertModalStartedRadio: document.getElementById('alertModalStartedRadio'),
+    alertModalStartedRange: document.getElementById('alertModalStartedRange'),
     alertModalMinStarted: document.getElementById('alertModalMinStarted'),
     alertModalMaxStarted: document.getElementById('alertModalMaxStarted'),
     alertModalRadioRange: document.getElementById('alertModalRadioRange'),
@@ -113,7 +113,7 @@ function setupAlertEventListeners() {
     alertElements.weekFilterAlert.addEventListener('change', applyAlertFilters);
     alertElements.minStartedChange.addEventListener('input', updateStartedChangeFilter);
     alertElements.minStarted.addEventListener('input', updateStartedFilter);
-    alertElements.minStartedRadio.addEventListener('input', updateStartedRadioFilter);
+    alertElements.minStartedRange.addEventListener('input', updateStartedRangeFilter);
     alertElements.alertSeverity.addEventListener('change', applyAlertFilters);
     
     // Ordenamiento
@@ -206,8 +206,8 @@ function processAlertData() {
         // Calcular momentum (combinando cambio started y rostered)
         player.momentum = (player.percent_started_change || 0) + ((player.percent_rostered_change || 0) * 0.3);
         
-        // Inicializar Radio Started en 0 por ahora (se calculará después)
-        player.startedRadio = 0;
+        // Inicializar Rango Started en 0 por ahora (se calculará después)
+        player.startedRange = 0;
         
         // Determinar severidad de la alerta
         const startedChange = Math.abs(player.percent_started_change || 0);
@@ -226,8 +226,8 @@ function processAlertData() {
         }
     });
     
-    // Calcular Radio Started después de que se muestren los jugadores
-    calculateAllStartedRadios();
+    // Calcular Rango Started después de que se muestren los jugadores
+    calculateAllStartedRanges();
     
     filteredAlertData = [...allAlertData];
     applyAlertFilters();
@@ -262,15 +262,15 @@ function updateStartedFilter() {
     applyAlertFilters();
 }
 
-// Actualizar filtro de Radio Started
-function updateStartedRadioFilter() {
-    const value = alertElements.minStartedRadio.value;
-    alertElements.minStartedRadioValue.textContent = `${value}%`;
+// Actualizar filtro de Rango Started
+function updateStartedRangeFilter() {
+    const value = alertElements.minStartedRange.value;
+    alertElements.minStartedRangeValue.textContent = `${value}%`;
     applyAlertFilters();
 }
 
-// Calcular Radio Started para un jugador
-async function calculateStartedRadio(playerId) {
+// Calcular Rango Started para un jugador
+async function calculateStartedRange(playerId) {
     try {
         const { data, error } = await supabaseClient
             .from('nfl_fantasy_trends')
@@ -288,13 +288,13 @@ async function calculateStartedRadio(playerId) {
         
         return maxStarted - minStarted;
     } catch (error) {
-        console.error('Error calculando Radio Started:', error);
+        console.error('Error calculando Rango Started:', error);
         return 0;
     }
 }
 
-// Calcular Radio Started para todos los jugadores (sin bloquear la UI)
-async function calculateAllStartedRadios() {
+// Calcular Rango Started para todos los jugadores (sin bloquear la UI)
+async function calculateAllStartedRanges() {
     try {
         // Obtener datos históricos para todos los jugadores de una vez
         const playerIds = allAlertData.map(p => p.player_id);
@@ -319,15 +319,15 @@ async function calculateAllStartedRadios() {
             playerHistoricalData[row.player_id].push(row.percent_started);
         });
         
-        // Calcular Radio Started para cada jugador
+        // Calcular Rango Started para cada jugador
         allAlertData.forEach(player => {
             const historicalData = playerHistoricalData[player.player_id];
             if (historicalData && historicalData.length > 1) {
                 const maxStarted = Math.max(...historicalData);
                 const minStarted = Math.min(...historicalData);
-                player.startedRadio = maxStarted - minStarted;
+                player.startedRange = maxStarted - minStarted;
             } else {
-                player.startedRadio = 0;
+                player.startedRange = 0;
             }
         });
         
@@ -335,7 +335,7 @@ async function calculateAllStartedRadios() {
         displayAlertPlayers();
         
     } catch (error) {
-        console.error('Error calculando Radio Started para todos:', error);
+        console.error('Error calculando Rango Started para todos:', error);
     }
 }
 
@@ -346,7 +346,7 @@ function applyAlertFilters() {
         const week = alertElements.weekFilterAlert.value;
         const minStartedChange = parseFloat(alertElements.minStartedChange.value);
         const minStarted = parseFloat(alertElements.minStarted.value);
-        const minStartedRadio = parseFloat(alertElements.minStartedRadio.value);
+        const minStartedRange = parseFloat(alertElements.minStartedRange.value);
         const severity = alertElements.alertSeverity.value;
         
         // Filtrar por posición
@@ -361,8 +361,8 @@ function applyAlertFilters() {
         // Filtrar por started mínimo
         if ((player.percent_started || 0) < minStarted) return false;
         
-        // Filtrar por Radio Started mínimo
-        if ((player.startedRadio || 0) < minStartedRadio) return false;
+        // Filtrar por Rango Started mínimo
+        if ((player.startedRange || 0) < minStartedRange) return false;
         
         // Filtrar por severidad
         if (severity !== 'all' && player.alertSeverity !== severity) return false;
@@ -645,9 +645,9 @@ function displayAlertPlayers() {
                         </span>
                     </div>
                     <div class="alert-metric-item">
-                        <span class="alert-metric-label">Radio Started:</span>
-                        <span class="alert-metric-value started-radio">
-                            ${(player.startedRadio || 0).toFixed(1)}
+                        <span class="alert-metric-label">Rango Started:</span>
+                        <span class="alert-metric-value started-range">
+                            ${(player.startedRange || 0).toFixed(1)}%
                         </span>
                     </div>
                 </div>
@@ -677,13 +677,13 @@ async function showAlertPlayerDetails(playerId) {
     alertElements.alertModalPosition.textContent = player.position || 'N/A';
     alertElements.alertModalTeam.textContent = player.team || 'N/A';
     
-    // Mostrar Radio Started
-    alertElements.alertModalStartedRadio.textContent = `${(player.startedRadio || 0).toFixed(1)}`;
+    // Mostrar Rango Started
+    alertElements.alertModalStartedRange.textContent = `${(player.startedRange || 0).toFixed(1)}%`;
     
     // Inicializar valores detallados mientras se calculan
     alertElements.alertModalMinStarted.textContent = '0.0%';
     alertElements.alertModalMaxStarted.textContent = '0.0%';
-    alertElements.alertModalRadioRange.textContent = `${(player.startedRadio || 0).toFixed(1)}%`;
+    alertElements.alertModalRadioRange.textContent = `${(player.startedRange || 0).toFixed(1)}%`;
     
     // Mostrar modal
     alertElements.alertPlayerModal.style.display = 'block';
@@ -974,9 +974,9 @@ function sortAlertPlayers() {
                 aVal = a.momentum || 0;
                 bVal = b.momentum || 0;
                 break;
-            case 'started_radio':
-                aVal = a.startedRadio || 0;
-                bVal = b.startedRadio || 0;
+            case 'started_range':
+                aVal = a.startedRange || 0;
+                bVal = b.startedRange || 0;
                 break;
             default:
                 aVal = a.percent_started_change || 0;
