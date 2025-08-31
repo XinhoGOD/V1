@@ -27,6 +27,8 @@ const alertElements = {
     minStartedChangeValue: document.getElementById('minStartedChangeValue'),
     minStarted: document.getElementById('minStarted'),
     minStartedValue: document.getElementById('minStartedValue'),
+    minStartedRadio: document.getElementById('minStartedRadio'),
+    minStartedRadioValue: document.getElementById('minStartedRadioValue'),
     alertSeverity: document.getElementById('alertSeverity'),
     
     // Métricas
@@ -57,6 +59,7 @@ const alertElements = {
     alertModalStartedChange: document.getElementById('alertModalStartedChange'),
     alertModalCurrentStarted: document.getElementById('alertModalCurrentStarted'),
     alertModalPreviousStarted: document.getElementById('alertModalPreviousStarted'),
+    alertModalStartedRadio: document.getElementById('alertModalStartedRadio'),
     alertModalPosition: document.getElementById('alertModalPosition'),
     alertModalTeam: document.getElementById('alertModalTeam')
 };
@@ -107,6 +110,7 @@ function setupAlertEventListeners() {
     alertElements.weekFilterAlert.addEventListener('change', applyAlertFilters);
     alertElements.minStartedChange.addEventListener('input', updateStartedChangeFilter);
     alertElements.minStarted.addEventListener('input', updateStartedFilter);
+    alertElements.minStartedRadio.addEventListener('input', updateStartedRadioFilter);
     alertElements.alertSeverity.addEventListener('change', applyAlertFilters);
     
     // Ordenamiento
@@ -190,14 +194,17 @@ async function loadAlertData() {
 }
 
 // Procesar datos para alertas
-function processAlertData() {
+async function processAlertData() {
     // Calcular métricas adicionales para cada jugador
-    allAlertData.forEach(player => {
+    for (const player of allAlertData) {
         // Calcular volatilidad (valor absoluto del cambio)
         player.volatility = Math.abs(player.percent_started_change || 0);
         
         // Calcular momentum (combinando cambio started y rostered)
         player.momentum = (player.percent_started_change || 0) + ((player.percent_rostered_change || 0) * 0.3);
+        
+        // Calcular Radio Started (diferencia entre max y min started histórico)
+        player.startedRadio = await calculateStartedRadio(player.player_id);
         
         // Determinar severidad de la alerta
         const startedChange = Math.abs(player.percent_started_change || 0);
@@ -214,7 +221,7 @@ function processAlertData() {
             player.alertSeverity = 'low';
             player.alertLevel = '🟢 Bajo';
         }
-    });
+    }
     
     filteredAlertData = [...allAlertData];
     applyAlertFilters();
@@ -249,6 +256,37 @@ function updateStartedFilter() {
     applyAlertFilters();
 }
 
+// Actualizar filtro de Radio Started
+function updateStartedRadioFilter() {
+    const value = alertElements.minStartedRadio.value;
+    alertElements.minStartedRadioValue.textContent = `${value}%`;
+    applyAlertFilters();
+}
+
+// Calcular Radio Started para un jugador
+async function calculateStartedRadio(playerId) {
+    try {
+        const { data, error } = await supabaseClient
+            .from('nfl_fantasy_trends')
+            .select('percent_started')
+            .eq('player_id', playerId)
+            .not('percent_started', 'is', null);
+        
+        if (error || !data || data.length === 0) {
+            return 0;
+        }
+        
+        const startedValues = data.map(d => d.percent_started);
+        const maxStarted = Math.max(...startedValues);
+        const minStarted = Math.min(...startedValues);
+        
+        return maxStarted - minStarted;
+    } catch (error) {
+        console.error('Error calculando Radio Started:', error);
+        return 0;
+    }
+}
+
 // Aplicar filtros
 function applyAlertFilters() {
     filteredAlertData = allAlertData.filter(player => {
@@ -256,6 +294,7 @@ function applyAlertFilters() {
         const week = alertElements.weekFilterAlert.value;
         const minStartedChange = parseFloat(alertElements.minStartedChange.value);
         const minStarted = parseFloat(alertElements.minStarted.value);
+        const minStartedRadio = parseFloat(alertElements.minStartedRadio.value);
         const severity = alertElements.alertSeverity.value;
         
         // Filtrar por posición
@@ -269,6 +308,9 @@ function applyAlertFilters() {
         
         // Filtrar por started mínimo
         if ((player.percent_started || 0) < minStarted) return false;
+        
+        // Filtrar por Radio Started mínimo
+        if ((player.startedRadio || 0) < minStartedRadio) return false;
         
         // Filtrar por severidad
         if (severity !== 'all' && player.alertSeverity !== severity) return false;
@@ -550,6 +592,12 @@ function displayAlertPlayers() {
                             ${player.momentum.toFixed(1)}
                         </span>
                     </div>
+                    <div class="alert-metric-item">
+                        <span class="alert-metric-label">Radio Started:</span>
+                        <span class="alert-metric-value started-radio">
+                            ${(player.startedRadio || 0).toFixed(1)}
+                        </span>
+                    </div>
                 </div>
             </div>
         `;
@@ -576,6 +624,9 @@ async function showAlertPlayerDetails(playerId) {
     
     alertElements.alertModalPosition.textContent = player.position || 'N/A';
     alertElements.alertModalTeam.textContent = player.team || 'N/A';
+    
+    // Mostrar Radio Started
+    alertElements.alertModalStartedRadio.textContent = `${(player.startedRadio || 0).toFixed(1)}`;
     
     // Obtener datos históricos del jugador desde la base de datos
     await loadAlertPlayerHistory(playerId);
@@ -951,6 +1002,10 @@ function sortAlertPlayers() {
             case 'momentum':
                 aVal = a.momentum || 0;
                 bVal = b.momentum || 0;
+                break;
+            case 'started_radio':
+                aVal = a.startedRadio || 0;
+                bVal = b.startedRadio || 0;
                 break;
             default:
                 aVal = a.percent_started_change || 0;

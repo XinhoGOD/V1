@@ -851,47 +851,6 @@ body::before {
     color: var(--danger-600);
 }
 
-/* Radio Started styling */
-.started-radio {
-    color: #6366f1;
-    font-weight: 600;
-    font-size: 0.9rem;
-}
-
-.started-radio::after {
-    content: '%';
-}
-
-/* Alert severity styles */
-.alert-severity {
-    display: inline-block;
-    padding: 4px 12px;
-    border-radius: 20px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    text-transform: uppercase;
-}
-
-.severity-critical {
-    background: linear-gradient(135deg, #ef4444, #dc2626);
-    color: white;
-}
-
-.severity-high {
-    background: linear-gradient(135deg, #f59e0b, #d97706);
-    color: white;
-}
-
-.severity-medium {
-    background: linear-gradient(135deg, #eab308, #ca8a04);
-    color: white;
-}
-
-.severity-low {
-    background: linear-gradient(135deg, #22c55e, #16a34a);
-    color: white;
-}
-
 /* Premium Modal */
 .modal {
     display: none;
