@@ -7,75 +7,90 @@ let alertCharts = {};
 // Configuración de Supabase
 const SUPABASE_CONFIG_KEY = 'supabase_config';
 
-// Elementos del DOM
-const alertElements = {
-    loadingAlert: document.getElementById('loadingAlert'),
-    alertContent: document.getElementById('alertContent'),
-    alertMode: document.getElementById('alertMode'),
-    refreshAlert: document.getElementById('refreshAlert'),
-    configBtn: document.getElementById('configBtn'),
-    configModal: document.getElementById('configModal'),
-    supabaseUrl: document.getElementById('supabaseUrl'),
-    supabaseKey: document.getElementById('supabaseKey'),
-    saveConfig: document.getElementById('saveConfig'),
-    testConnection: document.getElementById('testConnection'),
+// Elementos del DOM - Se inicializan después de que el DOM esté listo
+let alertElements = {};
+
+// Función para inicializar elementos del DOM
+function initializeAlertElements() {
+    alertElements = {
+        loadingAlert: document.getElementById('loadingAlert'),
+        alertContent: document.getElementById('alertContent'),
+        alertMode: document.getElementById('alertMode'),
+        refreshAlert: document.getElementById('refreshAlert'),
+        configBtn: document.getElementById('configBtn'),
+        configModal: document.getElementById('configModal'),
+        supabaseUrl: document.getElementById('supabaseUrl'),
+        supabaseKey: document.getElementById('supabaseKey'),
+        saveConfig: document.getElementById('saveConfig'),
+        testConnection: document.getElementById('testConnection'),
+        
+        // Filtros
+        positionFilterAlert: document.getElementById('positionFilterAlert'),
+        weekFilterAlert: document.getElementById('weekFilterAlert'),
+        minStartedChange: document.getElementById('minStartedChange'),
+        minStartedChangeValue: document.getElementById('minStartedChangeValue'),
+        minStarted: document.getElementById('minStarted'),
+        minStartedValue: document.getElementById('minStartedValue'),
+        minStartedRange: document.getElementById('minStartedRange'),
+        minStartedRangeValue: document.getElementById('minStartedRangeValue'),
+        rangeTrendFilter: document.getElementById('rangeTrendFilter'),
+        alertSeverity: document.getElementById('alertSeverity'),
+        
+        // Métricas
+        maxStartedIncrease: document.getElementById('maxStartedIncrease'),
+        maxStartedIncreasePlayer: document.getElementById('maxStartedIncreasePlayer'),
+        maxStartedDecrease: document.getElementById('maxStartedDecrease'),
+        maxStartedDecreasePlayer: document.getElementById('maxStartedDecreasePlayer'),
+        maxVolatilityValue: document.getElementById('maxVolatilityValue'),
+        maxVolatilityPlayer: document.getElementById('maxVolatilityPlayer'),
+        emergingMomentumValue: document.getElementById('emergingMomentumValue'),
+        emergingMomentumPlayer: document.getElementById('emergingMomentumPlayer'),
+        
+        // Resumen
+        criticalAlerts: document.getElementById('criticalAlerts'),
+        highAlerts: document.getElementById('highAlerts'),
+        mediumAlerts: document.getElementById('mediumAlerts'),
+        totalAlertsPlayers: document.getElementById('totalAlertsPlayers'),
+        
+        // Lista de jugadores
+        alertPlayersList: document.getElementById('alertPlayersList'),
+        alertSortBy: document.getElementById('alertSortBy'),
+        alertSortOrder: document.getElementById('alertSortOrder'),
+        
+        // Modal
+        alertPlayerModal: document.getElementById('alertPlayerModal'),
+        alertModalPlayerName: document.getElementById('alertModalPlayerName'),
+        alertModalSeverity: document.getElementById('alertModalSeverity'),
+        alertModalStartedChange: document.getElementById('alertModalStartedChange'),
+        alertModalCurrentStarted: document.getElementById('alertModalCurrentStarted'),
+        alertModalPreviousStarted: document.getElementById('alertModalPreviousStarted'),
+        alertModalPosition: document.getElementById('alertModalPosition'),
+        alertModalTeam: document.getElementById('alertModalTeam'),
+        alertModalGeneralTrend: document.getElementById('alertModalGeneralTrend'),
+        alertModalTotalRange: document.getElementById('alertModalTotalRange'),
+        
+        // Elementos de gráficas del modal
+        alertRosteredChart: document.getElementById('alertRosteredChart'),
+        alertRosteredChangeChart: document.getElementById('alertRosteredChangeChart'),
+        alertStartedChart: document.getElementById('alertStartedChart'),
+        alertStartedChangeChart: document.getElementById('alertStartedChangeChart'),
+        alertAddsChart: document.getElementById('alertAddsChart'),
+        alertDropsChart: document.getElementById('alertDropsChart')
+    };
     
-    // Filtros
-    positionFilterAlert: document.getElementById('positionFilterAlert'),
-    weekFilterAlert: document.getElementById('weekFilterAlert'),
-    minStartedChange: document.getElementById('minStartedChange'),
-    minStartedChangeValue: document.getElementById('minStartedChangeValue'),
-    minStarted: document.getElementById('minStarted'),
-    minStartedValue: document.getElementById('minStartedValue'),
-    minStartedRange: document.getElementById('minStartedRange'),
-    minStartedRangeValue: document.getElementById('minStartedRangeValue'),
-    rangeTrendFilter: document.getElementById('rangeTrendFilter'),
-    alertSeverity: document.getElementById('alertSeverity'),
-    
-    // Métricas
-    maxStartedIncrease: document.getElementById('maxStartedIncrease'),
-    maxStartedIncreasePlayer: document.getElementById('maxStartedIncreasePlayer'),
-    maxStartedDecrease: document.getElementById('maxStartedDecrease'),
-    maxStartedDecreasePlayer: document.getElementById('maxStartedDecreasePlayer'),
-    maxVolatilityValue: document.getElementById('maxVolatilityValue'),
-    maxVolatilityPlayer: document.getElementById('maxVolatilityPlayer'),
-    emergingMomentumValue: document.getElementById('emergingMomentumValue'),
-    emergingMomentumPlayer: document.getElementById('emergingMomentumPlayer'),
-    
-    // Resumen
-    criticalAlerts: document.getElementById('criticalAlerts'),
-    highAlerts: document.getElementById('highAlerts'),
-    mediumAlerts: document.getElementById('mediumAlerts'),
-    totalAlertsPlayers: document.getElementById('totalAlertsPlayers'),
-    
-    // Lista de jugadores
-    alertPlayersList: document.getElementById('alertPlayersList'),
-    alertSortBy: document.getElementById('alertSortBy'),
-    alertSortOrder: document.getElementById('alertSortOrder'),
-    
-    // Modal
-    alertPlayerModal: document.getElementById('alertPlayerModal'),
-    alertModalPlayerName: document.getElementById('alertModalPlayerName'),
-    alertModalSeverity: document.getElementById('alertModalSeverity'),
-    alertModalStartedChange: document.getElementById('alertModalStartedChange'),
-    alertModalCurrentStarted: document.getElementById('alertModalCurrentStarted'),
-    alertModalPreviousStarted: document.getElementById('alertModalPreviousStarted'),
-    alertModalPosition: document.getElementById('alertModalPosition'),
-    alertModalTeam: document.getElementById('alertModalTeam'),
-    alertModalGeneralTrend: document.getElementById('alertModalGeneralTrend'),
-    alertModalTotalRange: document.getElementById('alertModalTotalRange'),
-    
-    // Elementos de gráficas del modal
-    alertRosteredChart: document.getElementById('alertRosteredChart'),
-    alertRosteredChangeChart: document.getElementById('alertRosteredChangeChart'),
-    alertStartedChart: document.getElementById('alertStartedChart'),
-    alertStartedChangeChart: document.getElementById('alertStartedChangeChart'),
-    alertAddsChart: document.getElementById('alertAddsChart'),
-    alertDropsChart: document.getElementById('alertDropsChart')
-};
+    console.log('Elementos del modal inicializados:');
+    console.log('alertModalGeneralTrend:', alertElements.alertModalGeneralTrend);
+    console.log('alertModalTotalRange:', alertElements.alertModalTotalRange);
+    console.log('alertRosteredChart:', alertElements.alertRosteredChart);
+}
 
 // Inicialización
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM completamente cargado, inicializando elementos...');
+    
+    // Inicializar elementos del DOM
+    initializeAlertElements();
+    
     // Verificar que todas las librerías estén cargadas
     if (typeof Chart === 'undefined') {
         showAlertError('Error: Chart.js no se ha cargado correctamente. Verifica tu conexión a internet.');
