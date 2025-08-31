@@ -63,7 +63,15 @@ const alertElements = {
     alertModalPosition: document.getElementById('alertModalPosition'),
     alertModalTeam: document.getElementById('alertModalTeam'),
     alertModalGeneralTrend: document.getElementById('alertModalGeneralTrend'),
-    alertModalTotalRange: document.getElementById('alertModalTotalRange')
+    alertModalTotalRange: document.getElementById('alertModalTotalRange'),
+    
+    // Elementos de gráficas del modal
+    alertRosteredChart: document.getElementById('alertRosteredChart'),
+    alertRosteredChangeChart: document.getElementById('alertRosteredChangeChart'),
+    alertStartedChart: document.getElementById('alertStartedChart'),
+    alertStartedChangeChart: document.getElementById('alertStartedChangeChart'),
+    alertAddsChart: document.getElementById('alertAddsChart'),
+    alertDropsChart: document.getElementById('alertDropsChart')
 };
 
 // Inicialización
@@ -78,6 +86,11 @@ document.addEventListener('DOMContentLoaded', function() {
         showAlertError('Error: Supabase no se ha cargado correctamente. Verifica tu conexión a internet y recarga la página.');
         return;
     }
+
+    // Verificar que todos los elementos del modal existan
+    console.log('Verificando elementos del modal:');
+    console.log('alertModalGeneralTrend:', alertElements.alertModalGeneralTrend);
+    console.log('alertModalTotalRange:', alertElements.alertModalTotalRange);
     
     console.log('Todas las librerías cargadas correctamente - Fantasy Alert');
     initializeAlert();
@@ -732,6 +745,8 @@ async function showAlertPlayerDetails(playerId) {
 // Cargar historial del jugador para Fantasy Alert
 async function loadAlertPlayerHistory(playerId) {
     try {
+        console.log('Cargando historial para jugador:', playerId);
+        
         const { data, error } = await supabaseClient
             .from('nfl_fantasy_trends')
             .select('*')
@@ -741,6 +756,8 @@ async function loadAlertPlayerHistory(playerId) {
         if (error) {
             throw error;
         }
+        
+        console.log('Datos históricos obtenidos:', data ? data.length : 0, 'registros');
         
         // Calcular valores mínimo, máximo y radio para mostrar
         if (data && data.length > 0) {
@@ -753,8 +770,12 @@ async function loadAlertPlayerHistory(playerId) {
                 const maxStarted = Math.max(...startedValues);
                 const radioRange = maxStarted - minStarted;
                 
-                // Actualizar valores en el modal
-                alertElements.alertModalTotalRange.textContent = `${radioRange.toFixed(1)}%`;
+                // Actualizar valores en el modal (con verificación de seguridad)
+                if (alertElements.alertModalTotalRange) {
+                    alertElements.alertModalTotalRange.textContent = `${radioRange.toFixed(1)}%`;
+                } else {
+                    console.warn('alertModalTotalRange element not found');
+                }
                 
                 // Actualizar tendencia general
                 const firstValue = data[0].percent_started || 0;
@@ -765,18 +786,23 @@ async function loadAlertPlayerHistory(playerId) {
                 let trendClass = '';
                 
                 if (generalTrend > 2) {
-                    trendText = `📈 +${generalTrend.toFixed(1)}% (Ascendente)`;
+                    trendText = `📈 +${generalTrend.toFixed(1)}%`;
                     trendClass = 'positive-change';
                 } else if (generalTrend < -2) {
-                    trendText = `📉 ${generalTrend.toFixed(1)}% (Descendente)`;
+                    trendText = `📉 ${generalTrend.toFixed(1)}%`;
                     trendClass = 'negative-change';
                 } else {
-                    trendText = `➡️ ${generalTrend.toFixed(1)}% (Estable)`;
+                    trendText = `➡️ ${generalTrend.toFixed(1)}%`;
                     trendClass = '';
                 }
                 
-                alertElements.alertModalRangeTrend.textContent = trendText;
-                alertElements.alertModalRangeTrend.className = `radio-detail-value range-trend ${trendClass}`;
+                // Actualizar tendencia general (con verificación de seguridad)
+                if (alertElements.alertModalGeneralTrend) {
+                    alertElements.alertModalGeneralTrend.innerHTML = trendText;
+                    alertElements.alertModalGeneralTrend.className = `radio-detail-value range-trend ${trendClass}`;
+                } else {
+                    console.warn('alertModalGeneralTrend element not found');
+                }
             }
         }
         
