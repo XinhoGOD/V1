@@ -91,6 +91,13 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('Verificando elementos del modal:');
     console.log('alertModalGeneralTrend:', alertElements.alertModalGeneralTrend);
     console.log('alertModalTotalRange:', alertElements.alertModalTotalRange);
+    console.log('alertRosteredChart:', alertElements.alertRosteredChart);
+    console.log('alertStartedChart:', alertElements.alertStartedChart);
+    
+    // Verificar elementos por ID directamente
+    console.log('Verificación directa por ID:');
+    console.log('alertModalGeneralTrend direct:', document.getElementById('alertModalGeneralTrend'));
+    console.log('alertModalTotalRange direct:', document.getElementById('alertModalTotalRange'));
     
     console.log('Todas las librerías cargadas correctamente - Fantasy Alert');
     initializeAlert();
@@ -770,11 +777,25 @@ async function loadAlertPlayerHistory(playerId) {
                 const maxStarted = Math.max(...startedValues);
                 const radioRange = maxStarted - minStarted;
                 
+                console.log('Calculando valores del modal...');
+                console.log('Min Started:', minStarted);
+                console.log('Max Started:', maxStarted);
+                console.log('Radio Range:', radioRange);
+                
                 // Actualizar valores en el modal (con verificación de seguridad)
+                console.log('Verificando alertModalTotalRange antes de actualizar:', alertElements.alertModalTotalRange);
                 if (alertElements.alertModalTotalRange) {
                     alertElements.alertModalTotalRange.textContent = `${radioRange.toFixed(1)}%`;
+                    console.log('alertModalTotalRange actualizado correctamente');
                 } else {
                     console.warn('alertModalTotalRange element not found');
+                    // Intentar encontrar el elemento directamente
+                    const directElement = document.getElementById('alertModalTotalRange');
+                    console.log('Búsqueda directa del elemento:', directElement);
+                    if (directElement) {
+                        directElement.textContent = `${radioRange.toFixed(1)}%`;
+                        console.log('Elemento encontrado directamente y actualizado');
+                    }
                 }
                 
                 // Actualizar tendencia general
@@ -797,11 +818,21 @@ async function loadAlertPlayerHistory(playerId) {
                 }
                 
                 // Actualizar tendencia general (con verificación de seguridad)
+                console.log('Verificando alertModalGeneralTrend antes de actualizar:', alertElements.alertModalGeneralTrend);
                 if (alertElements.alertModalGeneralTrend) {
                     alertElements.alertModalGeneralTrend.innerHTML = trendText;
                     alertElements.alertModalGeneralTrend.className = `radio-detail-value range-trend ${trendClass}`;
+                    console.log('alertModalGeneralTrend actualizado correctamente');
                 } else {
                     console.warn('alertModalGeneralTrend element not found');
+                    // Intentar encontrar el elemento directamente
+                    const directElement = document.getElementById('alertModalGeneralTrend');
+                    console.log('Búsqueda directa del elemento alertModalGeneralTrend:', directElement);
+                    if (directElement) {
+                        directElement.innerHTML = trendText;
+                        directElement.className = `radio-detail-value range-trend ${trendClass}`;
+                        console.log('alertModalGeneralTrend encontrado directamente y actualizado');
+                    }
                 }
             }
         }
@@ -816,6 +847,9 @@ async function loadAlertPlayerHistory(playerId) {
 
 // Crear gráficos para el modal del jugador con tamaño fijo
 function createAlertPlayerCharts(playerHistory) {
+    console.log('Iniciando creación de gráficos del modal...');
+    console.log('Datos de historia del jugador:', playerHistory ? playerHistory.length : 0, 'registros');
+    
     // Destruir gráficos existentes
     Object.keys(alertCharts).forEach(key => {
         if (alertCharts[key] && key.includes('alert')) {
@@ -825,6 +859,7 @@ function createAlertPlayerCharts(playerHistory) {
     });
     
     if (!playerHistory || playerHistory.length === 0) {
+        console.warn('No hay datos de historial para crear gráficos');
         return;
     }
     
@@ -890,6 +925,7 @@ function createAlertPlayerCharts(playerHistory) {
     
     // 1. Gráfico % Rostered
     const rosteredCtx = document.getElementById('alertRosteredChart');
+    console.log('Canvas alertRosteredChart encontrado:', rosteredCtx);
     if (rosteredCtx) {
         alertCharts.alertRostered = new Chart(rosteredCtx, {
             type: 'line',
@@ -916,6 +952,7 @@ function createAlertPlayerCharts(playerHistory) {
     
     // 2. Gráfico Cambios % Rostered
     const rosteredChangeCtx = document.getElementById('alertRosteredChangeChart');
+    console.log('Canvas alertRosteredChangeChart encontrado:', rosteredChangeCtx);
     if (rosteredChangeCtx) {
         alertCharts.alertRosteredChange = new Chart(rosteredChangeCtx, {
             type: 'line',
