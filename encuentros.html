@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Encuentros - NFL Fantasy Trends</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2.39.3/dist/umd/supabase.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Header -->
+        <header class="dashboard-header">
+            <div class="header-content">
+                <h1><i class="fas fa-football-ball"></i> Encuentros - Comparación de Equipos</h1>
+                <div class="header-controls">
+                    <button id="refreshEncuentros" class="btn-refresh">
+                        <i class="fas fa-sync-alt"></i> Actualizar
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-content">
+                <!-- Navigation Menu -->
+                <nav class="sidebar-nav">
+                    <h3><i class="fas fa-bars"></i> Navegación</h3>
+                    <ul class="nav-menu">
+                        <li>
+                            <a href="dashboard.html" class="nav-item">
+                                <i class="fas fa-tachometer-alt"></i>
+                                <span>Dashboard</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="index.html" class="nav-item">
+                                <i class="fas fa-users"></i>
+                                <span>Jugadores</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="sleepers.html" class="nav-item">
+                                <i class="fas fa-eye"></i>
+                                <span>Sleepers</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="trends.html" class="nav-item">
+                                <i class="fas fa-trending-up"></i>
+                                <span>Tendencias</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="fantasy-alert.html" class="nav-item">
+                                <i class="fas fa-bell"></i>
+                                <span>Fantasy Alert</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="encuentros.html" class="nav-item active">
+                                <i class="fas fa-football-ball"></i>
+                                <span>Encuentros</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="settings.html" class="nav-item">
+                                <i class="fas fa-cog"></i>
+                                <span>Configuración</span>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+
+                <!-- Team Selection -->
+                <div class="filters-section">
+                    <h3><i class="fas fa-users"></i> Selección de Equipos</h3>
+                    
+                    <div class="filter-group">
+                        <label for="team1Select">Equipo 1:</label>
+                        <select id="team1Select" class="filter-select">
+                            <option value="">Selecciona Equipo 1</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="team2Select">Equipo 2:</label>
+                        <select id="team2Select" class="filter-select">
+                            <option value="">Selecciona Equipo 2</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <button id="compareTeams" class="btn-compare" disabled>
+                            <i class="fas fa-balance-scale"></i> Comparar Equipos
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Position Filters -->
+                <div class="filters-section">
+                    <h3><i class="fas fa-filter"></i> Filtros por Posición</h3>
+                    
+                    <div class="filter-group">
+                        <label for="positionFilterEncuentros">Posición:</label>
+                        <select id="positionFilterEncuentros" class="filter-select">
+                            <option value="">Todas las posiciones</option>
+                            <option value="QB">QB</option>
+                            <option value="RB">RB</option>
+                            <option value="WR">WR</option>
+                            <option value="TE">TE</option>
+                            <option value="K">K</option>
+                            <option value="DEF">DEF</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="minRostered">Min % Rostered:</label>
+                        <input type="range" id="minRostered" min="0" max="100" value="0" class="filter-range">
+                        <span id="minRosteredValue" class="range-value">0%</span>
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="minStarted">Min % Started:</label>
+                        <input type="range" id="minStarted" min="0" max="100" value="0" class="filter-range">
+                        <span id="minStartedValue" class="range-value">0%</span>
+                    </div>
+                </div>
+
+                <!-- Match Summary -->
+                <div class="stats-summary">
+                    <h3><i class="fas fa-chart-bar"></i> Resumen del Encuentro</h3>
+                    <div class="stat-item">
+                        <span class="stat-label">Equipo 1:</span>
+                        <span id="team1Name" class="stat-value">-</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Jugadores Equipo 1:</span>
+                        <span id="team1Count" class="stat-value">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Equipo 2:</span>
+                        <span id="team2Name" class="stat-value">-</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Jugadores Equipo 2:</span>
+                        <span id="team2Count" class="stat-value">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Total Jugadores:</span>
+                        <span id="totalPlayersCount" class="stat-value">0</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Loading Indicator -->
+            <div id="loadingEncuentros" class="loading-container">
+                <div class="loading-spinner"></div>
+                <p>Cargando datos de equipos...</p>
+            </div>
+
+            <!-- Team Selection Message -->
+            <div id="teamSelectionMessage" class="team-selection-message" style="display: none;">
+                <div class="selection-card">
+                    <i class="fas fa-users"></i>
+                    <h2>Selecciona dos equipos para comparar</h2>
+                    <p>Elige dos equipos de la NFL en el panel lateral para ver la comparación de sus jugadores y estadísticas fantasy.</p>
+                </div>
+            </div>
+
+            <!-- Encuentros Content -->
+            <div id="encuentrosContent" class="encuentros-content" style="display: none;">
+                <!-- Team Comparison Header -->
+                <div class="team-comparison-header">
+                    <div class="team-card" id="team1Card">
+                        <div class="team-logo">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <div class="team-info">
+                            <h3 id="team1Title">Equipo 1</h3>
+                            <p id="team1Players">0 jugadores</p>
+                        </div>
+                    </div>
+                    
+                    <div class="vs-divider">
+                        <span>VS</span>
+                    </div>
+                    
+                    <div class="team-card" id="team2Card">
+                        <div class="team-logo">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <div class="team-info">
+                            <h3 id="team2Title">Equipo 2</h3>
+                            <p id="team2Players">0 jugadores</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Comparison Charts -->
+                <div class="comparison-charts">
+                    <div class="chart-container">
+                        <h3><i class="fas fa-chart-bar"></i> Comparación % Rostered</h3>
+                        <canvas id="rosteredComparisonChart"></canvas>
+                    </div>
+                    
+                    <div class="chart-container">
+                        <h3><i class="fas fa-chart-line"></i> Comparación % Started</h3>
+                        <canvas id="startedComparisonChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Players Comparison -->
+                <div class="players-comparison-section">
+                    <div class="players-header">
+                        <h2><i class="fas fa-list"></i> Comparación de Jugadores</h2>
+                        <div class="sort-controls">
+                            <label for="encuentrosSortBy">Ordenar por:</label>
+                            <select id="encuentrosSortBy" class="sort-select">
+                                <option value="percent_rostered">% Rostered</option>
+                                <option value="percent_started">% Started</option>
+                                <option value="adds">Adds</option>
+                                <option value="drops">Drops</option>
+                                <option value="player_name">Nombre</option>
+                            </select>
+                            <button id="encuentrosSortOrder" class="btn-sort" data-order="desc">
+                                <i class="fas fa-sort-amount-down"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="teams-container">
+                        <div class="team-section">
+                            <h3 id="team1SectionTitle">Equipo 1</h3>
+                            <div id="team1PlayersList" class="players-list">
+                                <!-- Team 1 players will be populated here -->
+                            </div>
+                        </div>
+                        
+                        <div class="team-section">
+                            <h3 id="team2SectionTitle">Equipo 2</h3>
+                            <div id="team2PlayersList" class="players-list">
+                                <!-- Team 2 players will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Player Detail Modal -->
+            <div id="encuentrosPlayerModal" class="modal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2 id="encuentrosModalPlayerName">Detalles del Jugador</h2>
+                        <span class="close">&times;</span>
+                    </div>
+                    <div class="modal-body">
+                        <div class="player-info-section">
+                            <div class="info-grid">
+                                <div class="info-item">
+                                    <span class="info-label">Posición:</span>
+                                    <span id="encuentrosModalPosition" class="info-value"></span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Equipo:</span>
+                                    <span id="encuentrosModalTeam" class="info-value"></span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">% Rostered:</span>
+                                    <span id="encuentrosModalRostered" class="info-value"></span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">% Started:</span>
+                                    <span id="encuentrosModalStarted" class="info-value"></span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Adds:</span>
+                                    <span id="encuentrosModalAdds" class="info-value"></span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Drops:</span>
+                                    <span id="encuentrosModalDrops" class="info-value"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="charts-container">
+                            <div class="chart-section">
+                                <h3>% Rostered Histórico</h3>
+                                <canvas id="encuentrosRosteredChart"></canvas>
+                            </div>
+                            
+                            <div class="chart-section">
+                                <h3>% Started Histórico</h3>
+                                <canvas id="encuentrosStartedChart"></canvas>
+                            </div>
+                            
+                            <div class="chart-section">
+                                <h3>Adds y Drops</h3>
+                                <canvas id="encuentrosAddsDropsChart"></canvas>
+                            </div>
+                            
+                            <div class="chart-section">
+                                <h3>Cambios Semanales</h3>
+                                <canvas id="encuentrosChangesChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Configuration Modal -->
+    <div id="configModal" class="modal">
+        <div class="modal-content config-modal">
+            <div class="modal-header">
+                <h2>Configuración de Supabase</h2>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="config-form">
+                    <div class="form-group">
+                        <label for="supabaseUrl">URL de Supabase:</label>
+                        <input type="text" id="supabaseUrl" placeholder="https://tu-proyecto.supabase.co" class="config-input">
+                    </div>
+                    <div class="form-group">
+                        <label for="supabaseKey">Anon Key de Supabase:</label>
+                        <input type="password" id="supabaseKey" placeholder="Tu clave anónima" class="config-input">
+                    </div>
+                    <div class="form-actions">
+                        <button id="saveConfig" class="btn-primary">Guardar Configuración</button>
+                        <button id="testConnection" class="btn-secondary">Probar Conexión</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Configuration Button -->
+    <button id="configBtn" class="config-btn" title="Configurar Supabase">
+        <i class="fas fa-cog"></i>
+    </button>
+
+    <script src="encuentros.js"></script>
+</body>
+</html>
