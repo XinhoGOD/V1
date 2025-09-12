@@ -137,41 +137,39 @@
                 <!-- Top Performers Summary -->
                 <div class="stats-summary">
                     <h3><i class="fas fa-trophy"></i> Top Performers</h3>
-                    <div class="stats-container">
-                        <div class="stat-item top-performer">
-                            <span class="stat-label">🥇 Mayor Aumento:</span>
-                            <div class="stat-value-container">
-                                <span id="topPlayerName" class="stat-value">-</span>
-                                <span id="topPlayerIncrease" class="stat-increase">-</span>
-                            </div>
+                    <div class="stat-item top-performer">
+                        <span class="stat-label">🥇 Mayor Aumento:</span>
+                        <div class="stat-value-container">
+                            <span id="topPlayerName" class="stat-value">-</span>
+                            <span id="topPlayerIncrease" class="stat-increase">-</span>
                         </div>
-                        <div class="stat-item">
-                            <span class="stat-label">💎 Mejor QB:</span>
-                            <div class="stat-value-container">
-                                <span id="topQBName" class="stat-value">-</span>
-                                <span id="topQBIncrease" class="stat-increase">-</span>
-                            </div>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">💎 Mejor QB:</span>
+                        <div class="stat-value-container">
+                            <span id="topQBName" class="stat-value">-</span>
+                            <span id="topQBIncrease" class="stat-increase">-</span>
                         </div>
-                        <div class="stat-item">
-                            <span class="stat-label">🏃 Mejor RB:</span>
-                            <div class="stat-value-container">
-                                <span id="topRBName" class="stat-value">-</span>
-                                <span id="topRBIncrease" class="stat-increase">-</span>
-                            </div>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">🏃 Mejor RB:</span>
+                        <div class="stat-value-container">
+                            <span id="topRBName" class="stat-value">-</span>
+                            <span id="topRBIncrease" class="stat-increase">-</span>
                         </div>
-                        <div class="stat-item">
-                            <span class="stat-label">⚡ Mejor WR:</span>
-                            <div class="stat-value-container">
-                                <span id="topWRName" class="stat-value">-</span>
-                                <span id="topWRIncrease" class="stat-increase">-</span>
-                            </div>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">⚡ Mejor WR:</span>
+                        <div class="stat-value-container">
+                            <span id="topWRName" class="stat-value">-</span>
+                            <span id="topWRIncrease" class="stat-increase">-</span>
                         </div>
-                        <div class="stat-item">
-                            <span class="stat-label">🎯 Mejor TE:</span>
-                            <div class="stat-value-container">
-                                <span id="topTEName" class="stat-value">-</span>
-                                <span id="topTEIncrease" class="stat-increase">-</span>
-                            </div>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">🎯 Mejor TE:</span>
+                        <div class="stat-value-container">
+                            <span id="topTEName" class="stat-value">-</span>
+                            <span id="topTEIncrease" class="stat-increase">-</span>
                         </div>
                     </div>
                 </div>
@@ -249,63 +247,83 @@
                         <!-- Top Performers Stats -->
                         <div class="top-performers-display" style="
                             display: grid;
-                            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-                            gap: 12px;
+                            grid-template-columns: repeat(5, 1fr);
+                            gap: 8px;
                             margin: 16px 0;
-                            padding: 16px;
+                            padding: 12px;
                             background: rgba(255, 255, 255, 0.1);
                             border-radius: 12px;
                             backdrop-filter: blur(10px);
                         ">
                             <div class="performer-stat" style="
-                                padding: 12px;
+                                padding: 8px;
                                 background: rgba(255, 255, 255, 0.2);
                                 border-radius: 8px;
                                 text-align: center;
+                                min-height: 80px;
+                                display: flex;
+                                flex-direction: column;
+                                justify-content: center;
                             ">
-                                <div style="font-size: 14px; margin-bottom: 4px;">🥇 Mayor Aumento</div>
-                                <div id="topPlayerNameChart" style="font-weight: bold; font-size: 16px;">-</div>
-                                <div id="topPlayerIncreaseChart" style="color: #059669; font-weight: 600; font-size: 14px;">-</div>
+                                <div style="font-size: 11px; margin-bottom: 4px; font-weight: 500;">🥇 Mayor Aumento</div>
+                                <div id="topPlayerNameChart" style="font-weight: bold; font-size: 12px; margin-bottom: 2px;">-</div>
+                                <div id="topPlayerIncreaseChart" style="color: #059669; font-weight: 600; font-size: 12px;">-</div>
                             </div>
                             <div class="performer-stat" style="
-                                padding: 12px;
+                                padding: 8px;
                                 background: rgba(255, 255, 255, 0.2);
                                 border-radius: 8px;
                                 text-align: center;
+                                min-height: 80px;
+                                display: flex;
+                                flex-direction: column;
+                                justify-content: center;
                             ">
-                                <div style="font-size: 14px; margin-bottom: 4px;">💎 Mejor QB</div>
-                                <div id="topQBNameChart" style="font-weight: bold; font-size: 16px;">-</div>
-                                <div id="topQBIncreaseChart" style="color: #059669; font-weight: 600; font-size: 14px;">-</div>
+                                <div style="font-size: 11px; margin-bottom: 4px; font-weight: 500;">💎 Mejor QB</div>
+                                <div id="topQBNameChart" style="font-weight: bold; font-size: 12px; margin-bottom: 2px;">-</div>
+                                <div id="topQBIncreaseChart" style="color: #059669; font-weight: 600; font-size: 12px;">-</div>
                             </div>
                             <div class="performer-stat" style="
-                                padding: 12px;
+                                padding: 8px;
                                 background: rgba(255, 255, 255, 0.2);
                                 border-radius: 8px;
                                 text-align: center;
+                                min-height: 80px;
+                                display: flex;
+                                flex-direction: column;
+                                justify-content: center;
                             ">
-                                <div style="font-size: 14px; margin-bottom: 4px;">🏃 Mejor RB</div>
-                                <div id="topRBNameChart" style="font-weight: bold; font-size: 16px;">-</div>
-                                <div id="topRBIncreaseChart" style="color: #059669; font-weight: 600; font-size: 14px;">-</div>
+                                <div style="font-size: 11px; margin-bottom: 4px; font-weight: 500;">🏃 Mejor RB</div>
+                                <div id="topRBNameChart" style="font-weight: bold; font-size: 12px; margin-bottom: 2px;">-</div>
+                                <div id="topRBIncreaseChart" style="color: #059669; font-weight: 600; font-size: 12px;">-</div>
                             </div>
                             <div class="performer-stat" style="
-                                padding: 12px;
+                                padding: 8px;
                                 background: rgba(255, 255, 255, 0.2);
                                 border-radius: 8px;
                                 text-align: center;
+                                min-height: 80px;
+                                display: flex;
+                                flex-direction: column;
+                                justify-content: center;
                             ">
-                                <div style="font-size: 14px; margin-bottom: 4px;">⚡ Mejor WR</div>
-                                <div id="topWRNameChart" style="font-weight: bold; font-size: 16px;">-</div>
-                                <div id="topWRIncreaseChart" style="color: #059669; font-weight: 600; font-size: 14px;">-</div>
+                                <div style="font-size: 11px; margin-bottom: 4px; font-weight: 500;">⚡ Mejor WR</div>
+                                <div id="topWRNameChart" style="font-weight: bold; font-size: 12px; margin-bottom: 2px;">-</div>
+                                <div id="topWRIncreaseChart" style="color: #059669; font-weight: 600; font-size: 12px;">-</div>
                             </div>
                             <div class="performer-stat" style="
-                                padding: 12px;
+                                padding: 8px;
                                 background: rgba(255, 255, 255, 0.2);
                                 border-radius: 8px;
                                 text-align: center;
+                                min-height: 80px;
+                                display: flex;
+                                flex-direction: column;
+                                justify-content: center;
                             ">
-                                <div style="font-size: 14px; margin-bottom: 4px;">🎯 Mejor TE</div>
-                                <div id="topTENameChart" style="font-weight: bold; font-size: 16px;">-</div>
-                                <div id="topTEIncreaseChart" style="color: #059669; font-weight: 600; font-size: 14px;">-</div>
+                                <div style="font-size: 11px; margin-bottom: 4px; font-weight: 500;">🎯 Mejor TE</div>
+                                <div id="topTENameChart" style="font-weight: bold; font-size: 12px; margin-bottom: 2px;">-</div>
+                                <div id="topTEIncreaseChart" style="color: #059669; font-weight: 600; font-size: 12px;">-</div>
                             </div>
                         </div>
                         
