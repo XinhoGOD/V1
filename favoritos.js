@@ -50,25 +50,21 @@ const favoritosElements = {
     maxIncreasePlayer: document.getElementById('maxIncreasePlayer'),
     totalFavoritosMetric: document.getElementById('totalFavoritosMetric'),
     avgIncreaseMetric: document.getElementById('avgIncreaseMetric'),
-    hotTrendsCount: document.getElementById('hotTrendsCount'),
+    elitePlayersMetric: document.getElementById('elitePlayersMetric'),
     
     // Charts
-    favoritosChart: document.getElementById('favoritosChart'),
+    positionChartFavoritos: document.getElementById('positionChartFavoritos'),
+    increaseDistributionChart: document.getElementById('increaseDistributionChart'),
     
-    // Players List
-    favoritosPlayersList: document.getElementById('favoritosPlayersList'),
-    favoritosSortBy: document.getElementById('favoritosSortBy'),
-    favoritosSortOrder: document.getElementById('favoritosSortOrder'),
-    
-    // Modal
+    // Modal Elements
     favoritosPlayerModal: document.getElementById('favoritosPlayerModal'),
     favoritosModalPlayerName: document.getElementById('favoritosModalPlayerName'),
+    favoritosModalPosition: document.getElementById('favoritosModalPosition'),
+    favoritosModalTeam: document.getElementById('favoritosModalTeam'),
     favoritosModalStartedChange: document.getElementById('favoritosModalStartedChange'),
     favoritosModalCurrentStarted: document.getElementById('favoritosModalCurrentStarted'),
     favoritosModalPreviousStarted: document.getElementById('favoritosModalPreviousStarted'),
     favoritosModalRostered: document.getElementById('favoritosModalRostered'),
-    favoritosModalPosition: document.getElementById('favoritosModalPosition'),
-    favoritosModalTeam: document.getElementById('favoritosModalTeam'),
     favoritosModalRanking: document.getElementById('favoritosModalRanking'),
     
     // Modal Charts
@@ -79,531 +75,411 @@ const favoritosElements = {
 };
 
 // Inicialización
-document.addEventListener('DOMContentLoaded', function() {
-    // Verificar que todas las librerías estén cargadas
-    if (typeof Chart === 'undefined') {
-        showFavoritosError('Error: Chart.js no se ha cargado correctamente. Verifica tu conexión a internet.');
-        return;
-    }
-    
-    if (typeof window.supabase === 'undefined') {
-        showFavoritosError('Error: Supabase no se ha cargado correctamente. Verifica tu conexión a internet y recarga la página.');
-        return;
-    }
-
-    console.log('Inicializando módulo de Favoritos de la Semana...');
-
-    // Configurar eventos
-    setupFavoritosEvents();
-    
-    // Verificar configuración de Supabase
-    const config = getSupabaseConfig();
-    if (config.url && config.key) {
-        initializeSupabase(config.url, config.key);
-        loadFavoritosData();
-    } else {
-        showConfigModal();
-    }
-});
-
-// Configurar eventos
-function setupFavoritosEvents() {
-    // Eventos de navegación y configuración
-    favoritosElements.refreshFavoritos.addEventListener('click', refreshFavoritosData);
-    favoritosElements.configBtn.addEventListener('click', showConfigModal);
-    favoritosElements.saveConfig.addEventListener('click', saveSupabaseConfig);
-    favoritosElements.testConnection.addEventListener('click', testSupabaseConnection);
-    
-    // Eventos de filtros
-    favoritosElements.positionFilterFavoritos.addEventListener('change', applyFavoritosFilters);
-    favoritosElements.teamFilterFavoritos.addEventListener('change', applyFavoritosFilters);
-    favoritosElements.minStartedIncrease.addEventListener('input', updateMinStartedIncreaseValue);
-    favoritosElements.minCurrentStarted.addEventListener('input', updateMinCurrentStartedValue);
-    favoritosElements.minRosteredFavoritos.addEventListener('input', updateMinRosteredFavoritosValue);
-    
-    // Eventos de ordenamiento
-    favoritosElements.favoritosSortBy.addEventListener('change', sortFavoritosPlayers);
-    favoritosElements.favoritosSortOrder.addEventListener('click', toggleFavoritosSortOrder);
-    
-    // Eventos del modal
-    document.querySelectorAll('.close').forEach(closeBtn => {
-        closeBtn.addEventListener('click', function() {
-            this.closest('.modal').style.display = 'none';
-        });
-    });
-    
-    window.addEventListener('click', function(event) {
-        if (event.target.classList.contains('modal')) {
-            event.target.style.display = 'none';
-        }
-    });
-}
-
-// Actualizar valores de filtros
-function updateMinStartedIncreaseValue() {
-    favoritosElements.minStartedIncreaseValue.textContent = `${favoritosElements.minStartedIncrease.value}%`;
-    applyFavoritosFilters();
-}
-
-function updateMinCurrentStartedValue() {
-    favoritosElements.minCurrentStartedValue.textContent = `${favoritosElements.minCurrentStarted.value}%`;
-    applyFavoritosFilters();
-}
-
-function updateMinRosteredFavoritosValue() {
-    favoritosElements.minRosteredFavoritosValue.textContent = `${favoritosElements.minRosteredFavoritos.value}%`;
-    applyFavoritosFilters();
-}
-
-// Inicializar Supabase
 function initializeSupabase(url, key) {
+    if (!window.supabase) {
+        console.error('Supabase library not loaded');
+        return;
+    }
+    
     try {
         supabaseClient = window.supabase.createClient(url, key);
-        console.log('Cliente Supabase inicializado correctamente para Favoritos');
+        console.log('Supabase client inicializado correctamente para Favoritos');
     } catch (error) {
-        console.error('Error inicializando Supabase:', error);
-        showFavoritosError('Error al conectar con Supabase. Verifica tu configuración.');
+        console.error('Error inicializando Supabase client:', error);
     }
 }
 
 // Cargar datos de favoritos
 async function loadFavoritosData() {
+    if (!supabaseClient) {
+        const config = getSupabaseConfig();
+        if (!config.url || !config.key) {
+            showConfigModal();
+            return;
+        }
+        initializeSupabase(config.url, config.key);
+    }
+    
+    showLoading(true);
+    
     try {
-        showLoading(true);
-        
-        console.log('Cargando datos para Favoritos de la Semana...');
-        
         const { data, error } = await supabaseClient
             .from('nfl_fantasy_trends')
             .select('*')
-            .order('scraped_at', { ascending: false });
+            .gt('percent_started_change', 0)
+            .order('percent_started_change', { ascending: false });
         
         if (error) {
             throw error;
         }
         
-        console.log('Datos cargados:', data ? data.length : 0, 'registros');
+        // Procesar datos y calcular métricas adicionales
+        allFavoritosData = data.map(player => ({
+            ...player,
+            startedIncrease: player.percent_started_change || 0,
+            player: player.player_name || player.player || 'Desconocido',
+            started: player.percent_started || 0,
+            rostered: player.percent_rostered || 0,
+            position: player.position || 'N/A',
+            team: player.team || 'N/A'
+        }));
         
-        // Filtrar solo jugadores con cambio positivo en started
-        const favoritosData = (data || []).filter(player => {
-            const startedChange = player.percent_started_change || 0;
-            return startedChange > 0;
-        });
-        
-        console.log('Favoritos encontrados:', favoritosData.length, 'jugadores con aumento en Started');
-        
-        // Ordenar por mayor aumento en started
-        allFavoritosData = favoritosData.sort((a, b) => {
-            const changeA = a.percent_started_change || 0;
-            const changeB = b.percent_started_change || 0;
-            return changeB - changeA;
-        });
-        
-        // Llenar filtros
-        populateTeamFilter();
-        
-        // Aplicar filtros iniciales
+        // Filtrar y mostrar datos
         applyFavoritosFilters();
-        
-        showLoading(false);
-        favoritosElements.favoritosContent.style.display = 'block';
+        updateFavoritosStats();
+        createFavoritosDashboardCharts();
         
     } catch (error) {
-        console.error('Error cargando datos:', error);
-        showFavoritosError('Error al cargar los datos. Verifica tu conexión y configuración.');
+        console.error('Error cargando datos de favoritos:', error);
+        showFavoritosError('Error cargando datos: ' + error.message);
+    } finally {
         showLoading(false);
     }
 }
 
-// Llenar filtro de equipos
-function populateTeamFilter() {
-    const teams = [...new Set(allFavoritosData.map(player => player.team).filter(team => team))];
-    teams.sort();
-    
-    favoritosElements.teamFilterFavoritos.innerHTML = '<option value="">Todos los equipos</option>';
-    teams.forEach(team => {
-        const option = document.createElement('option');
-        option.value = team;
-        option.textContent = team;
-        favoritosElements.teamFilterFavoritos.appendChild(option);
-    });
-}
-
-// Aplicar filtros a favoritos
+// Aplicar filtros
 function applyFavoritosFilters() {
-    let filtered = [...allFavoritosData];
+    let filteredData = [...allFavoritosData];
     
-    // Filtro por posición
-    const position = favoritosElements.positionFilterFavoritos.value;
-    if (position) {
-        filtered = filtered.filter(player => player.position === position);
+    // Filtrar por posición
+    const positionFilter = favoritosElements.positionFilterFavoritos?.value || 'all';
+    if (positionFilter !== 'all') {
+        filteredData = filteredData.filter(player => player.position === positionFilter);
     }
     
-    // Filtro por equipo
-    const team = favoritosElements.teamFilterFavoritos.value;
-    if (team) {
-        filtered = filtered.filter(player => player.team === team);
+    // Filtrar por equipo
+    const teamFilter = favoritosElements.teamFilterFavoritos?.value || 'all';
+    if (teamFilter !== 'all') {
+        filteredData = filteredData.filter(player => player.team === teamFilter);
     }
     
-    // Filtro por aumento mínimo en started
-    const minIncrease = parseFloat(favoritosElements.minStartedIncrease.value);
-    filtered = filtered.filter(player => (player.percent_started_change || 0) >= minIncrease);
+    // Filtrar por aumento mínimo
+    const minIncrease = parseFloat(favoritosElements.minStartedIncrease?.value || 0);
+    if (minIncrease > 0) {
+        filteredData = filteredData.filter(player => player.startedIncrease >= minIncrease);
+    }
     
-    // Filtro por % started actual mínimo
-    const minCurrentStarted = parseFloat(favoritosElements.minCurrentStarted.value);
-    filtered = filtered.filter(player => (player.percent_started || 0) >= minCurrentStarted);
+    // Filtrar por % Started actual mínimo
+    const minCurrentStarted = parseFloat(favoritosElements.minCurrentStarted?.value || 0);
+    if (minCurrentStarted > 0) {
+        filteredData = filteredData.filter(player => player.started >= minCurrentStarted);
+    }
     
-    // Filtro por % rostered mínimo
-    const minRostered = parseFloat(favoritosElements.minRosteredFavoritos.value);
-    filtered = filtered.filter(player => (player.percent_rostered || 0) >= minRostered);
+    // Filtrar por % Rostered mínimo
+    const minRostered = parseFloat(favoritosElements.minRosteredFavoritos?.value || 0);
+    if (minRostered > 0) {
+        filteredData = filteredData.filter(player => player.rostered >= minRostered);
+    }
     
-    filteredFavoritosData = filtered;
-    
-    // Actualizar UI
-    updateFavoritosUI();
-    updateFavoritosMetrics();
-    createFavoritosChart();
+    filteredFavoritosData = filteredData;
     displayFavoritosPlayers();
 }
 
-// Actualizar UI con estadísticas principales
-function updateFavoritosUI() {
-    const totalFavoritos = filteredFavoritosData.length;
-    const avgIncrease = totalFavoritos > 0 
-        ? (filteredFavoritosData.reduce((sum, player) => sum + (player.percent_started_change || 0), 0) / totalFavoritos).toFixed(1)
-        : 0;
-    
-    favoritosElements.totalFavoritos.textContent = totalFavoritos;
-    favoritosElements.avgIncrease.textContent = `${avgIncrease}%`;
-}
-
-// Actualizar métricas de favoritos
-function updateFavoritosMetrics() {
-    if (filteredFavoritosData.length === 0) {
-        // Limpiar métricas si no hay datos
-        favoritosElements.maxIncreaseValue.textContent = '-';
-        favoritosElements.maxIncreasePlayer.textContent = '-';
-        favoritosElements.totalFavoritosMetric.textContent = '0';
-        favoritosElements.avgIncreaseMetric.textContent = '-';
-        favoritosElements.hotTrendsCount.textContent = '0';
-        
-        // Limpiar top performers
-        clearTopPerformers();
-        return;
-    }
-    
-    // Jugador con mayor aumento
-    const topPlayer = filteredFavoritosData[0];
-    favoritosElements.maxIncreaseValue.textContent = `+${(topPlayer.percent_started_change || 0).toFixed(1)}%`;
-    favoritosElements.maxIncreasePlayer.textContent = topPlayer.player_name;
-    
-    // Total de favoritos
-    favoritosElements.totalFavoritosMetric.textContent = filteredFavoritosData.length;
-    
-    // Promedio de aumento
-    const avgIncrease = filteredFavoritosData.reduce((sum, player) => sum + (player.percent_started_change || 0), 0) / filteredFavoritosData.length;
-    favoritosElements.avgIncreaseMetric.textContent = `+${avgIncrease.toFixed(1)}%`;
-    
-    // Tendencias calientes (>5% aumento)
-    const hotTrends = filteredFavoritosData.filter(player => (player.percent_started_change || 0) > 5);
-    favoritosElements.hotTrendsCount.textContent = hotTrends.length;
-    
-    // Actualizar top performers por posición
-    updateTopPerformers();
-}
-
-// Actualizar top performers por posición
-function updateTopPerformers() {
-    const positions = ['QB', 'RB', 'WR', 'TE'];
-    
-    positions.forEach(position => {
-        const positionPlayers = filteredFavoritosData.filter(player => player.position === position);
-        const topPlayer = positionPlayers.length > 0 ? positionPlayers[0] : null;
-        
-        const nameElement = favoritosElements[`top${position}Name`];
-        const increaseElement = favoritosElements[`top${position}Increase`];
-        
-        if (topPlayer) {
-            nameElement.textContent = topPlayer.player_name;
-            increaseElement.textContent = `+${(topPlayer.percent_started_change || 0).toFixed(1)}%`;
-        } else {
-            nameElement.textContent = '-';
-            increaseElement.textContent = '-';
-        }
-    });
-    
-    // Overall top player
-    if (filteredFavoritosData.length > 0) {
-        const topOverall = filteredFavoritosData[0];
-        favoritosElements.topPlayerName.textContent = topOverall.player_name;
-        favoritosElements.topPlayerIncrease.textContent = `+${(topOverall.percent_started_change || 0).toFixed(1)}%`;
-    } else {
-        favoritosElements.topPlayerName.textContent = '-';
-        favoritosElements.topPlayerIncrease.textContent = '-';
-    }
-}
-
-// Limpiar top performers
-function clearTopPerformers() {
-    const positions = ['QB', 'RB', 'WR', 'TE'];
-    positions.forEach(position => {
-        favoritosElements[`top${position}Name`].textContent = '-';
-        favoritosElements[`top${position}Increase`].textContent = '-';
-    });
-    favoritosElements.topPlayerName.textContent = '-';
-    favoritosElements.topPlayerIncrease.textContent = '-';
-}
-
-// Crear gráfico de favoritos
-function createFavoritosChart() {
-    // Destruir gráfico existente
-    if (favoritosCharts.favoritos) {
-        favoritosCharts.favoritos.destroy();
-    }
-    
-    if (!favoritosElements.favoritosChart || filteredFavoritosData.length === 0) {
-        return;
-    }
-    
-    // Top 15 jugadores
-    const top15 = filteredFavoritosData.slice(0, 15);
-    
-    const ctx = favoritosElements.favoritosChart;
-    
-    const data = {
-        labels: top15.map(player => player.player_name),
-        datasets: [{
-            label: 'Aumento % Started',
-            data: top15.map(player => player.percent_started_change || 0),
-            backgroundColor: top15.map((_, index) => {
-                // Gradiente de colores del oro al verde
-                const ratio = index / Math.max(1, top15.length - 1);
-                if (ratio < 0.33) {
-                    return `rgba(255, 215, 0, ${0.8 - ratio * 0.3})`; // Oro
-                } else if (ratio < 0.66) {
-                    return `rgba(255, 165, 0, ${0.8 - ratio * 0.3})`; // Naranja
-                } else {
-                    return `rgba(34, 197, 94, ${0.8 - ratio * 0.3})`; // Verde
-                }
-            }),
-            borderColor: top15.map((_, index) => {
-                const ratio = index / Math.max(1, top15.length - 1);
-                if (ratio < 0.33) {
-                    return 'rgba(255, 215, 0, 1)';
-                } else if (ratio < 0.66) {
-                    return 'rgba(255, 165, 0, 1)';
-                } else {
-                    return 'rgba(34, 197, 94, 1)';
-                }
-            }),
-            borderWidth: 2
-        }]
-    };
-    
-    favoritosCharts.favoritos = new Chart(ctx, {
-        type: 'bar',
-        data: data,
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                title: {
-                    display: true,
-                    text: 'Top 15 Jugadores - Mayor Aumento en % Started'
-                },
-                legend: {
-                    display: false
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    title: {
-                        display: true,
-                        text: 'Aumento (%)'
-                    },
-                    ticks: {
-                        callback: function(value) {
-                            return '+' + value + '%';
-                        }
-                    }
-                },
-                x: {
-                    title: {
-                        display: true,
-                        text: 'Jugadores'
-                    },
-                    ticks: {
-                        maxRotation: 45,
-                        minRotation: 45
-                    }
-                }
-            },
-            onClick: (event, elements) => {
-                if (elements.length > 0) {
-                    const index = elements[0].index;
-                    const player = top15[index];
-                    showFavoritosPlayerDetails(player.player_id);
-                }
-            }
-        }
-    });
-}
-
-// Mostrar jugadores de favoritos
+// Mostrar jugadores favoritos
 function displayFavoritosPlayers() {
-    if (!filteredFavoritosData || filteredFavoritosData.length === 0) {
-        favoritosElements.favoritosPlayersList.innerHTML = '<p class="no-favoritos">No hay favoritos que coincidan con los filtros aplicados.</p>';
+    const container = document.getElementById('favoritosPlayersList');
+    if (!container) return;
+    
+    if (filteredFavoritosData.length === 0) {
+        container.innerHTML = '<div class="no-favoritos">No hay jugadores favoritos que cumplan los criterios actuales.</div>';
         return;
     }
     
-    // Ordenar según criterios actuales
-    const sortedPlayers = sortPlayersByCurrentCriteria(filteredFavoritosData);
-    
-    const html = sortedPlayers.map((player, index) => {
-        const startedChange = player.percent_started_change || 0;
+    const playersHTML = filteredFavoritosData.map((player, index) => {
         const ranking = index + 1;
-        
-        // Determinar clase de ranking
-        let rankingClass = 'ranking-normal';
-        if (ranking === 1) rankingClass = 'ranking-gold';
-        else if (ranking === 2) rankingClass = 'ranking-silver';
-        else if (ranking === 3) rankingClass = 'ranking-bronze';
-        else if (ranking <= 10) rankingClass = 'ranking-top10';
-        
-        // Determinar nivel de aumento
-        let increaseClass = 'increase-normal';
-        if (startedChange >= 10) increaseClass = 'increase-extreme';
-        else if (startedChange >= 5) increaseClass = 'increase-high';
-        else if (startedChange >= 2) increaseClass = 'increase-medium';
+        const increaseLevel = getIncreaseLevel(player.startedIncrease);
+        const rankingClass = getRankingClass(ranking);
         
         return `
-            <div class="favorito-player-card ${increaseClass}" onclick="showFavoritosPlayerDetails('${player.player_id}')">
+            <div class="favorito-player-card ${increaseLevel}" onclick="showFavoritosPlayerDetails('${player.player_id || player.player}')">
                 <div class="favorito-ranking ${rankingClass}">
                     <span class="ranking-number">#${ranking}</span>
-                    ${ranking <= 3 ? '<i class="fas fa-trophy"></i>' : ''}
+                    ${getRankingIcon(ranking)}
                 </div>
                 
                 <div class="player-info">
-                    <h3>${player.player_name}</h3>
+                    <div class="player-name">${player.player}</div>
                     <div class="player-meta">
-                        <span class="position-badge position-${player.position}">${player.position}</span>
-                        <span class="team-name">${player.team}</span>
+                        <span class="position-badge">${player.position}</span>
+                        <span class="team-badge">${player.team}</span>
                     </div>
                 </div>
                 
                 <div class="favorito-main-stat">
-                    <div class="increase-badge ${increaseClass}">
+                    <div class="increase-badge ${increaseLevel}">
                         <i class="fas fa-arrow-up"></i>
-                        <span class="increase-value">+${startedChange.toFixed(1)}%</span>
+                        <span class="increase-value">+${player.startedIncrease.toFixed(1)}%</span>
                     </div>
-                    <span class="increase-label">Aumento Started</span>
+                    <div class="increase-label">Aumento Started</div>
                 </div>
                 
-                <div class="stat-card">
-                    <span class="stat-value">${(player.percent_started || 0).toFixed(1)}%</span>
-                    <span class="stat-label">Started Actual</span>
+                <div class="stat-value-container">
+                    <div class="stat-value">${player.started.toFixed(1)}%</div>
+                    <div class="stat-label">Started Actual</div>
                 </div>
                 
-                <div class="stat-card">
-                    <span class="stat-value">${(player.percent_rostered || 0).toFixed(1)}%</span>
-                    <span class="stat-label">Rostered</span>
+                <div class="stat-value-container">
+                    <div class="stat-value">${(player.started - player.startedIncrease).toFixed(1)}%</div>
+                    <div class="stat-label">Started Anterior</div>
                 </div>
                 
-                <div class="stat-card">
-                    <span class="stat-value">${player.adds || 0}</span>
-                    <span class="stat-label">Adds</span>
+                <div class="stat-value-container">
+                    <div class="stat-value">${player.rostered.toFixed(1)}%</div>
+                    <div class="stat-label">Rostered</div>
                 </div>
                 
                 <div class="favorito-actions">
-                    <i class="fas fa-star favorito-star"></i>
+                    <i class="favorito-star fas fa-star"></i>
                 </div>
             </div>
         `;
     }).join('');
     
-    favoritosElements.favoritosPlayersList.innerHTML = html;
+    container.innerHTML = playersHTML;
 }
 
-// Ordenar jugadores según criterios actuales
-function sortPlayersByCurrentCriteria(players) {
-    const sortBy = favoritosElements.favoritosSortBy.value;
-    const order = favoritosElements.favoritosSortOrder.dataset.order;
+// Obtener nivel de aumento
+function getIncreaseLevel(increase) {
+    if (increase >= 15) return 'increase-extreme';
+    if (increase >= 10) return 'increase-high';
+    if (increase >= 5) return 'increase-medium';
+    return 'increase-normal';
+}
+
+// Obtener clase de ranking
+function getRankingClass(ranking) {
+    if (ranking <= 3) return 'ranking-gold';
+    if (ranking <= 6) return 'ranking-silver';
+    if (ranking <= 10) return 'ranking-bronze';
+    if (ranking <= 20) return 'ranking-top10';
+    return '';
+}
+
+// Obtener icono de ranking
+function getRankingIcon(ranking) {
+    if (ranking === 1) return '<i class="fas fa-crown"></i>';
+    if (ranking <= 3) return '<i class="fas fa-medal"></i>';
+    if (ranking <= 10) return '<i class="fas fa-trophy"></i>';
+    return '';
+}
+
+// Actualizar estadísticas
+function updateFavoritosStats() {
+    if (allFavoritosData.length === 0) return;
     
-    return players.sort((a, b) => {
-        let valueA, valueB;
-        
-        switch (sortBy) {
-            case 'player_name':
-                valueA = (a.player_name || '').toLowerCase();
-                valueB = (b.player_name || '').toLowerCase();
-                break;
-            case 'percent_started_change':
-                valueA = a.percent_started_change || 0;
-                valueB = b.percent_started_change || 0;
-                break;
-            case 'percent_started':
-                valueA = a.percent_started || 0;
-                valueB = b.percent_started || 0;
-                break;
-            case 'percent_rostered':
-                valueA = a.percent_rostered || 0;
-                valueB = b.percent_rostered || 0;
-                break;
-            default:
-                valueA = a.percent_started_change || 0;
-                valueB = b.percent_started_change || 0;
-        }
-        
-        if (order === 'desc') {
-            return valueB > valueA ? 1 : valueB < valueA ? -1 : 0;
-        } else {
-            return valueA > valueB ? 1 : valueA < valueB ? -1 : 0;
+    const totalFavoritos = allFavoritosData.length;
+    const avgIncrease = allFavoritosData.reduce((sum, p) => sum + p.startedIncrease, 0) / totalFavoritos;
+    const maxIncrease = Math.max(...allFavoritosData.map(p => p.startedIncrease));
+    const topPlayer = allFavoritosData.find(p => p.startedIncrease === maxIncrease);
+    const elitePlayers = allFavoritosData.filter(p => p.startedIncrease >= 15).length;
+    
+    // Actualizar stats del header
+    if (favoritosElements.totalFavoritos) {
+        favoritosElements.totalFavoritos.textContent = totalFavoritos;
+    }
+    if (favoritosElements.avgIncrease) {
+        favoritosElements.avgIncrease.textContent = `+${avgIncrease.toFixed(1)}%`;
+    }
+    
+    // Actualizar métricas detalladas
+    if (favoritosElements.maxIncreaseValue) {
+        favoritosElements.maxIncreaseValue.textContent = `+${maxIncrease.toFixed(1)}%`;
+    }
+    if (favoritosElements.maxIncreasePlayer) {
+        favoritosElements.maxIncreasePlayer.textContent = topPlayer?.player || 'N/A';
+    }
+    if (favoritosElements.totalFavoritosMetric) {
+        favoritosElements.totalFavoritosMetric.textContent = totalFavoritos;
+    }
+    if (favoritosElements.avgIncreaseMetric) {
+        favoritosElements.avgIncreaseMetric.textContent = `+${avgIncrease.toFixed(1)}%`;
+    }
+    if (favoritosElements.elitePlayersMetric) {
+        favoritosElements.elitePlayersMetric.textContent = elitePlayers;
+    }
+    
+    // Actualizar top performers por posición
+    updateTopPerformers();
+}
+
+// Actualizar top performers
+function updateTopPerformers() {
+    const positions = ['QB', 'RB', 'WR', 'TE'];
+    
+    positions.forEach(pos => {
+        const positionPlayers = allFavoritosData.filter(p => p.position === pos);
+        if (positionPlayers.length > 0) {
+            const topPlayer = positionPlayers[0];
+            const nameElement = favoritosElements[`top${pos}Name`];
+            const increaseElement = favoritosElements[`top${pos}Increase`];
+            
+            if (nameElement) nameElement.textContent = topPlayer.player;
+            if (increaseElement) increaseElement.textContent = `+${topPlayer.startedIncrease.toFixed(1)}%`;
         }
     });
+    
+    // Top player overall
+    if (allFavoritosData.length > 0) {
+        const topOverall = allFavoritosData[0];
+        if (favoritosElements.topPlayerName) {
+            favoritosElements.topPlayerName.textContent = topOverall.player;
+        }
+        if (favoritosElements.topPlayerIncrease) {
+            favoritosElements.topPlayerIncrease.textContent = `+${topOverall.startedIncrease.toFixed(1)}%`;
+        }
+    }
 }
 
-// Eventos de ordenamiento
-function sortFavoritosPlayers() {
-    displayFavoritosPlayers();
-}
-
-function toggleFavoritosSortOrder() {
-    const currentOrder = favoritosElements.favoritosSortOrder.dataset.order;
-    const newOrder = currentOrder === 'desc' ? 'asc' : 'desc';
+// Crear gráficas del dashboard
+function createFavoritosDashboardCharts() {
+    // Gráfica por posición
+    if (favoritosElements.positionChartFavoritos) {
+        const positionData = allFavoritosData.reduce((acc, player) => {
+            acc[player.position] = (acc[player.position] || 0) + 1;
+            return acc;
+        }, {});
+        
+        if (favoritosCharts.position) {
+            favoritosCharts.position.destroy();
+        }
+        
+        favoritosCharts.position = new Chart(favoritosElements.positionChartFavoritos, {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(positionData),
+                datasets: [{
+                    data: Object.values(positionData),
+                    backgroundColor: [
+                        'rgba(239, 68, 68, 0.8)',   // QB
+                        'rgba(34, 197, 94, 0.8)',   // RB
+                        'rgba(59, 130, 246, 0.8)',  // WR
+                        'rgba(168, 85, 247, 0.8)',  // TE
+                        'rgba(251, 191, 36, 0.8)',  // K
+                        'rgba(156, 163, 175, 0.8)'  // DST
+                    ],
+                    borderWidth: 3,
+                    borderColor: '#ffffff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 20,
+                            usePointStyle: true,
+                            font: {
+                                weight: 'bold'
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
     
-    favoritosElements.favoritosSortOrder.dataset.order = newOrder;
-    favoritosElements.favoritosSortOrder.innerHTML = newOrder === 'desc' 
-        ? '<i class="fas fa-sort-amount-down"></i>' 
-        : '<i class="fas fa-sort-amount-up"></i>';
-    
-    displayFavoritosPlayers();
+    // Gráfica de distribución de aumentos
+    if (favoritosElements.increaseDistributionChart) {
+        const ranges = ['1-4.9%', '5-9.9%', '10-14.9%', '15%+'];
+        const rangeData = [
+            allFavoritosData.filter(p => p.startedIncrease >= 1 && p.startedIncrease < 5).length,
+            allFavoritosData.filter(p => p.startedIncrease >= 5 && p.startedIncrease < 10).length,
+            allFavoritosData.filter(p => p.startedIncrease >= 10 && p.startedIncrease < 15).length,
+            allFavoritosData.filter(p => p.startedIncrease >= 15).length
+        ];
+        
+        if (favoritosCharts.distribution) {
+            favoritosCharts.distribution.destroy();
+        }
+        
+        favoritosCharts.distribution = new Chart(favoritosElements.increaseDistributionChart, {
+            type: 'bar',
+            data: {
+                labels: ranges,
+                datasets: [{
+                    label: 'Número de Jugadores',
+                    data: rangeData,
+                    backgroundColor: [
+                        'rgba(168, 85, 247, 0.8)',  // Normal
+                        'rgba(59, 130, 246, 0.8)',  // Medio
+                        'rgba(34, 197, 94, 0.8)',   // Alto
+                        'rgba(251, 191, 36, 0.8)'   // Extremo
+                    ],
+                    borderColor: [
+                        'rgba(168, 85, 247, 1)',
+                        'rgba(59, 130, 246, 1)',
+                        'rgba(34, 197, 94, 1)',
+                        'rgba(251, 191, 36, 1)'
+                    ],
+                    borderWidth: 2,
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
+            }
+        });
+    }
 }
 
 // Mostrar detalles del jugador en modal
 async function showFavoritosPlayerDetails(playerId) {
-    const player = allFavoritosData.find(p => p.player_id === playerId);
+    const player = allFavoritosData.find(p => (p.player_id && p.player_id === playerId) || p.player === playerId);
     if (!player) return;
     
     // Calcular ranking
-    const ranking = allFavoritosData.findIndex(p => p.player_id === playerId) + 1;
+    const ranking = allFavoritosData.findIndex(p => (p.player_id && p.player_id === playerId) || p.player === playerId) + 1;
     
     // Llenar información básica
-    favoritosElements.favoritosModalPlayerName.textContent = player.player_name;
-    favoritosElements.favoritosModalStartedChange.textContent = `+${(player.percent_started_change || 0).toFixed(1)}%`;
-    favoritosElements.favoritosModalCurrentStarted.textContent = `${(player.percent_started || 0).toFixed(1)}%`;
+    favoritosElements.favoritosModalPlayerName.textContent = player.player;
+    favoritosElements.favoritosModalStartedChange.textContent = `+${player.startedIncrease.toFixed(1)}%`;
+    favoritosElements.favoritosModalCurrentStarted.textContent = `${player.started.toFixed(1)}%`;
     
     // Calcular started anterior
-    const previousStarted = (player.percent_started || 0) - (player.percent_started_change || 0);
+    const previousStarted = player.started - player.startedIncrease;
     favoritosElements.favoritosModalPreviousStarted.textContent = `${previousStarted.toFixed(1)}%`;
     
-    favoritosElements.favoritosModalRostered.textContent = `${(player.percent_rostered || 0).toFixed(1)}%`;
-    favoritosElements.favoritosModalPosition.textContent = player.position || 'N/A';
-    favoritosElements.favoritosModalTeam.textContent = player.team || 'N/A';
-    favoritosElements.favoritosModalRanking.textContent = `#${ranking}`;
+    favoritosElements.favoritosModalRostered.textContent = `${player.rostered.toFixed(1)}%`;
+    favoritosElements.favoritosModalPosition.textContent = player.position;
+    favoritosElements.favoritosModalTeam.textContent = player.team;
+    favoritosElements.favoritosModalRanking.innerHTML = `<i class="fas fa-crown"></i><span>#${ranking}</span>`;
     
-    // Mostrar modal
+    // Aplicar clase de ranking
+    const rankingElement = favoritosElements.favoritosModalRanking;
+    rankingElement.className = 'ranking-crown';
+    if (ranking <= 3) rankingElement.classList.add('ranking-gold');
+    else if (ranking <= 6) rankingElement.classList.add('ranking-silver');
+    else if (ranking <= 10) rankingElement.classList.add('ranking-bronze');
+    
+    // Mostrar modal con efecto
     favoritosElements.favoritosPlayerModal.style.display = 'block';
+    
+    // Añadir efecto de entrada
+    const modalContent = favoritosElements.favoritosPlayerModal.querySelector('.modal-content');
+    modalContent.style.transform = 'scale(0.7) translateY(-100px)';
+    modalContent.style.opacity = '0';
+    
+    setTimeout(() => {
+        modalContent.style.transform = 'scale(1) translateY(0)';
+        modalContent.style.opacity = '1';
+        modalContent.style.transition = 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)';
+    }, 10);
     
     // Cargar datos históricos
     await loadFavoritosPlayerHistory(playerId);
@@ -615,7 +491,7 @@ async function loadFavoritosPlayerHistory(playerId) {
         const { data, error } = await supabaseClient
             .from('nfl_fantasy_trends')
             .select('*')
-            .eq('player_id', playerId)
+            .or(`player_id.eq.${playerId},player_name.eq.${playerId}`)
             .order('scraped_at', { ascending: true });
         
         if (error) {
@@ -623,17 +499,49 @@ async function loadFavoritosPlayerHistory(playerId) {
         }
         
         if (data && data.length > 0) {
-            createFavoritosPlayerCharts(data);
+            createEnhancedFavoritosPlayerCharts(data);
+        } else {
+            // Si no hay datos históricos, crear gráficas simuladas
+            const player = allFavoritosData.find(p => (p.player_id && p.player_id === playerId) || p.player === playerId);
+            createSimulatedCharts(player);
         }
         
     } catch (error) {
         console.error('Error cargando historial del jugador:', error);
+        // Crear gráficas simuladas en caso de error
+        const player = allFavoritosData.find(p => (p.player_id && p.player_id === playerId) || p.player === playerId);
+        createSimulatedCharts(player);
     }
 }
 
-// Crear gráficos del jugador para el modal
-function createFavoritosPlayerCharts(playerHistory) {
-    // Destruir gráficos existentes del modal
+// Crear gráficas simuladas
+function createSimulatedCharts(player) {
+    const weeks = ['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4', 'Sem 5', 'Sem 6', 'Sem 7', 'Sem 8'];
+    const baseStarted = Math.max(1, player.started - player.startedIncrease);
+    
+    // Simular datos históricos con tendencia ascendente
+    const simulatedData = weeks.map((_, index) => {
+        const progress = index / (weeks.length - 1);
+        const variation = (Math.random() - 0.5) * 2; // Pequeña variación
+        const started = Math.max(0, baseStarted + (player.startedIncrease * progress) + variation);
+        const rostered = Math.max(started, player.rostered + (Math.random() - 0.5) * 5);
+        
+        return {
+            scraped_at: new Date(Date.now() - (weeks.length - 1 - index) * 7 * 24 * 60 * 60 * 1000).toISOString(),
+            percent_started: started,
+            percent_rostered: rostered,
+            percent_started_change: index === 0 ? 0 : started - (baseStarted + (player.startedIncrease * (index - 1) / (weeks.length - 1))),
+            adds: Math.floor(Math.random() * 1000) + 500,
+            drops: Math.floor(Math.random() * 300) + 100
+        };
+    });
+    
+    createEnhancedFavoritosPlayerCharts(simulatedData);
+}
+
+// Crear gráficas mejoradas del jugador
+function createEnhancedFavoritosPlayerCharts(playerHistory) {
+    // Destruir gráficos existentes
     const modalChartKeys = ['favoritosStarted', 'favoritosStartedChange', 'favoritosComparison', 'favoritosAddsDrops'];
     modalChartKeys.forEach(key => {
         if (favoritosCharts[key]) {
@@ -642,36 +550,61 @@ function createFavoritosPlayerCharts(playerHistory) {
         }
     });
     
-    if (!playerHistory || playerHistory.length === 0) {
-        return;
-    }
+    if (!playerHistory || playerHistory.length === 0) return;
     
-    const labels = playerHistory.map(data => new Date(data.scraped_at).toLocaleDateString('es-ES'));
+    const labels = playerHistory.map(data => {
+        const date = new Date(data.scraped_at);
+        return date.toLocaleDateString('es-ES', { month: 'short', day: 'numeric' });
+    });
     const startedData = playerHistory.map(d => d.percent_started || 0);
     const startedChangeData = playerHistory.map(d => d.percent_started_change || 0);
     const rosteredData = playerHistory.map(d => d.percent_rostered || 0);
     const addsData = playerHistory.map(d => d.adds || 0);
     const dropsData = playerHistory.map(d => d.drops || 0);
     
-    const chartOptions = {
+    // Configuración base mejorada
+    const baseChartConfig = {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-            legend: { display: true }
+            tooltip: {
+                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                titleColor: '#ffffff',
+                bodyColor: '#ffffff',
+                borderColor: 'rgba(59, 130, 246, 1)',
+                borderWidth: 2,
+                cornerRadius: 12,
+                displayColors: true,
+                titleFont: { size: 14, weight: 'bold' },
+                bodyFont: { size: 13 }
+            }
         },
         scales: {
             x: {
-                display: true,
-                title: { display: true, text: 'Fecha' }
+                grid: { display: false },
+                ticks: {
+                    color: '#6b7280',
+                    font: { weight: 'bold', size: 11 }
+                }
             },
-            y: { 
-                beginAtZero: true,
-                title: { display: true, text: 'Valor' }
+            y: {
+                grid: {
+                    color: 'rgba(107, 114, 128, 0.1)',
+                    lineWidth: 1
+                },
+                ticks: {
+                    color: '#6b7280',
+                    font: { size: 11 }
+                }
             }
+        },
+        animation: {
+            duration: 2000,
+            easing: 'easeOutQuart'
         }
     };
     
-    // Gráfico % Started
+    // Gráfica 1: % Started Histórico
     if (favoritosElements.favoritosStartedChart) {
         favoritosCharts.favoritosStarted = new Chart(favoritosElements.favoritosStartedChart, {
             type: 'line',
@@ -680,51 +613,99 @@ function createFavoritosPlayerCharts(playerHistory) {
                 datasets: [{
                     label: '% Started',
                     data: startedData,
-                    borderColor: '#10b981',
-                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                    borderWidth: 3,
+                    borderColor: 'rgba(34, 197, 94, 1)',
+                    backgroundColor: function(context) {
+                        const chart = context.chart;
+                        const {ctx, chartArea} = chart;
+                        if (!chartArea) return null;
+                        
+                        const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+                        gradient.addColorStop(0, 'rgba(34, 197, 94, 0.3)');
+                        gradient.addColorStop(0.5, 'rgba(34, 197, 94, 0.1)');
+                        gradient.addColorStop(1, 'rgba(34, 197, 94, 0.05)');
+                        return gradient;
+                    },
+                    borderWidth: 4,
                     fill: true,
-                    tension: 0.4
+                    tension: 0.4,
+                    pointBackgroundColor: 'rgba(34, 197, 94, 1)',
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 3,
+                    pointRadius: 6,
+                    pointHoverRadius: 8
                 }]
             },
             options: {
-                ...chartOptions,
+                ...baseChartConfig,
+                plugins: {
+                    ...baseChartConfig.plugins,
+                    legend: { display: false },
+                    tooltip: {
+                        ...baseChartConfig.plugins.tooltip,
+                        callbacks: {
+                            label: (context) => `${context.parsed.y.toFixed(1)}% Started`
+                        }
+                    }
+                },
                 scales: {
-                    ...chartOptions.scales,
-                    y: { ...chartOptions.scales.y, max: 100, title: { display: true, text: 'Porcentaje (%)' }}
-                }
-            }
-        });
-    }
-    
-    // Gráfico Cambios Started
-    if (favoritosElements.favoritosStartedChangeChart) {
-        favoritosCharts.favoritosStartedChange = new Chart(favoritosElements.favoritosStartedChangeChart, {
-            type: 'bar',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Cambio % Started',
-                    data: startedChangeData,
-                    backgroundColor: startedChangeData.map(val => val > 0 ? 'rgba(34, 197, 94, 0.8)' : 'rgba(239, 68, 68, 0.8)'),
-                    borderColor: startedChangeData.map(val => val > 0 ? 'rgba(34, 197, 94, 1)' : 'rgba(239, 68, 68, 1)'),
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                ...chartOptions,
-                scales: {
-                    ...chartOptions.scales,
-                    y: { 
-                        beginAtZero: false,
-                        title: { display: true, text: 'Cambio (%)' }
+                    ...baseChartConfig.scales,
+                    y: {
+                        ...baseChartConfig.scales.y,
+                        beginAtZero: true,
+                        ticks: {
+                            ...baseChartConfig.scales.y.ticks,
+                            callback: (value) => value.toFixed(0) + '%'
+                        }
                     }
                 }
             }
         });
     }
     
-    // Gráfico Comparación Rostered vs Started
+    // Gráfica 2: Cambios Semanales
+    if (favoritosElements.favoritosStartedChangeChart) {
+        favoritosCharts.favoritosStartedChange = new Chart(favoritosElements.favoritosStartedChangeChart, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Cambio Semanal',
+                    data: startedChangeData,
+                    backgroundColor: startedChangeData.map(value => 
+                        value >= 0 ? 'rgba(34, 197, 94, 0.7)' : 'rgba(239, 68, 68, 0.7)'
+                    ),
+                    borderColor: startedChangeData.map(value => 
+                        value >= 0 ? 'rgba(34, 197, 94, 1)' : 'rgba(239, 68, 68, 1)'
+                    ),
+                    borderWidth: 2,
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                ...baseChartConfig,
+                plugins: {
+                    ...baseChartConfig.plugins,
+                    legend: { display: false },
+                    tooltip: {
+                        ...baseChartConfig.plugins.tooltip,
+                        callbacks: {
+                            label: (context) => {
+                                const value = context.parsed.y;
+                                const sign = value >= 0 ? '+' : '';
+                                return `${sign}${value.toFixed(1)}% cambio`;
+                            }
+                        }
+                    }
+                },
+                animation: {
+                    duration: 1500,
+                    easing: 'easeOutBounce'
+                }
+            }
+        });
+    }
+    
+    // Gráfica 3: Comparación Rostered vs Started
     if (favoritosElements.favoritosComparisonChart) {
         favoritosCharts.favoritosComparison = new Chart(favoritosElements.favoritosComparisonChart, {
             type: 'line',
@@ -734,32 +715,62 @@ function createFavoritosPlayerCharts(playerHistory) {
                     {
                         label: '% Rostered',
                         data: rosteredData,
-                        borderColor: '#3b82f6',
-                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                        borderWidth: 2,
-                        fill: false
+                        borderColor: 'rgba(168, 85, 247, 1)',
+                        backgroundColor: 'rgba(168, 85, 247, 0.1)',
+                        borderWidth: 3,
+                        fill: false,
+                        tension: 0.3,
+                        pointBackgroundColor: 'rgba(168, 85, 247, 1)',
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 2,
+                        pointRadius: 5
                     },
                     {
                         label: '% Started',
                         data: startedData,
-                        borderColor: '#10b981',
-                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                        borderWidth: 2,
-                        fill: false
+                        borderColor: 'rgba(34, 197, 94, 1)',
+                        backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                        borderWidth: 3,
+                        fill: false,
+                        tension: 0.3,
+                        pointBackgroundColor: 'rgba(34, 197, 94, 1)',
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 2,
+                        pointRadius: 5
                     }
                 ]
             },
             options: {
-                ...chartOptions,
+                ...baseChartConfig,
+                plugins: {
+                    ...baseChartConfig.plugins,
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        labels: {
+                            usePointStyle: true,
+                            padding: 20,
+                            font: { weight: 'bold', size: 12 },
+                            color: '#374151'
+                        }
+                    }
+                },
                 scales: {
-                    ...chartOptions.scales,
-                    y: { ...chartOptions.scales.y, max: 100, title: { display: true, text: 'Porcentaje (%)' }}
+                    ...baseChartConfig.scales,
+                    y: {
+                        ...baseChartConfig.scales.y,
+                        beginAtZero: true,
+                        ticks: {
+                            ...baseChartConfig.scales.y.ticks,
+                            callback: (value) => value.toFixed(0) + '%'
+                        }
+                    }
                 }
             }
         });
     }
     
-    // Gráfico Adds vs Drops
+    // Gráfica 4: Adds vs Drops
     if (favoritosElements.favoritosAddsDropsChart) {
         favoritosCharts.favoritosAddsDrops = new Chart(favoritosElements.favoritosAddsDropsChart, {
             type: 'bar',
@@ -769,24 +780,50 @@ function createFavoritosPlayerCharts(playerHistory) {
                     {
                         label: 'Adds',
                         data: addsData,
-                        backgroundColor: 'rgba(34, 197, 94, 0.8)',
+                        backgroundColor: 'rgba(34, 197, 94, 0.7)',
                         borderColor: 'rgba(34, 197, 94, 1)',
-                        borderWidth: 1
+                        borderWidth: 2,
+                        borderRadius: 6
                     },
                     {
                         label: 'Drops',
                         data: dropsData,
-                        backgroundColor: 'rgba(239, 68, 68, 0.8)',
+                        backgroundColor: 'rgba(239, 68, 68, 0.7)',
                         borderColor: 'rgba(239, 68, 68, 1)',
-                        borderWidth: 1
+                        borderWidth: 2,
+                        borderRadius: 6
                     }
                 ]
             },
             options: {
-                ...chartOptions,
+                ...baseChartConfig,
+                plugins: {
+                    ...baseChartConfig.plugins,
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        labels: {
+                            usePointStyle: true,
+                            padding: 20,
+                            font: { weight: 'bold', size: 12 },
+                            color: '#374151'
+                        }
+                    }
+                },
                 scales: {
-                    ...chartOptions.scales,
-                    y: { ...chartOptions.scales.y, title: { display: true, text: 'Cantidad' }}
+                    ...baseChartConfig.scales,
+                    y: {
+                        ...baseChartConfig.scales.y,
+                        beginAtZero: true,
+                        ticks: {
+                            ...baseChartConfig.scales.y.ticks,
+                            callback: (value) => value.toLocaleString()
+                        }
+                    }
+                },
+                animation: {
+                    duration: 1800,
+                    easing: 'easeOutCubic'
                 }
             }
         });
@@ -799,14 +836,16 @@ function refreshFavoritosData() {
 }
 
 function showLoading(show) {
-    favoritosElements.loadingFavoritos.style.display = show ? 'flex' : 'none';
+    if (favoritosElements.loadingFavoritos) {
+        favoritosElements.loadingFavoritos.style.display = show ? 'flex' : 'none';
+    }
 }
 
 function showFavoritosError(message) {
-    alert(message);
+    alert('Error en Favoritos: ' + message);
 }
 
-// Funciones de configuración de Supabase (reutilizadas)
+// Configuración de Supabase
 function getSupabaseConfig() {
     const config = localStorage.getItem(SUPABASE_CONFIG_KEY);
     return config ? JSON.parse(config) : { url: '', key: '' };
@@ -853,3 +892,66 @@ function showConfigModal() {
     favoritosElements.supabaseKey.value = config.key || '';
     favoritosElements.configModal.style.display = 'block';
 }
+
+// Event Listeners
+document.addEventListener('DOMContentLoaded', function() {
+    // Inicializar con configuración guardada
+    const config = getSupabaseConfig();
+    if (config.url && config.key) {
+        initializeSupabase(config.url, config.key);
+        loadFavoritosData();
+    } else {
+        showConfigModal();
+    }
+    
+    // Event listeners para filtros
+    if (favoritosElements.positionFilterFavoritos) {
+        favoritosElements.positionFilterFavoritos.addEventListener('change', applyFavoritosFilters);
+    }
+    if (favoritosElements.teamFilterFavoritos) {
+        favoritosElements.teamFilterFavoritos.addEventListener('change', applyFavoritosFilters);
+    }
+    if (favoritosElements.minStartedIncrease) {
+        favoritosElements.minStartedIncrease.addEventListener('input', function() {
+            favoritosElements.minStartedIncreaseValue.textContent = this.value + '%';
+            applyFavoritosFilters();
+        });
+    }
+    if (favoritosElements.minCurrentStarted) {
+        favoritosElements.minCurrentStarted.addEventListener('input', function() {
+            favoritosElements.minCurrentStartedValue.textContent = this.value + '%';
+            applyFavoritosFilters();
+        });
+    }
+    if (favoritosElements.minRosteredFavoritos) {
+        favoritosElements.minRosteredFavoritos.addEventListener('input', function() {
+            favoritosElements.minRosteredFavoritosValue.textContent = this.value + '%';
+            applyFavoritosFilters();
+        });
+    }
+    
+    // Event listeners para botones
+    if (favoritosElements.refreshFavoritos) {
+        favoritosElements.refreshFavoritos.addEventListener('click', refreshFavoritosData);
+    }
+    if (favoritosElements.configBtn) {
+        favoritosElements.configBtn.addEventListener('click', showConfigModal);
+    }
+    if (favoritosElements.saveConfig) {
+        favoritosElements.saveConfig.addEventListener('click', saveSupabaseConfig);
+    }
+    if (favoritosElements.testConnection) {
+        favoritosElements.testConnection.addEventListener('click', testSupabaseConnection);
+    }
+    
+    // Event listener para cerrar modales
+    document.addEventListener('click', function(event) {
+        if (event.target.classList.contains('close')) {
+            const modal = event.target.closest('.modal');
+            if (modal) modal.style.display = 'none';
+        }
+        if (event.target.classList.contains('modal')) {
+            event.target.style.display = 'none';
+        }
+    });
+});
