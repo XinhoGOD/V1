@@ -239,6 +239,36 @@
                     </div>
                 </div>
 
+                <!-- Enhanced Dashboard Metrics -->
+                <div class="enhanced-dashboard-section">
+                    <div class="dashboard-row">
+                        <!-- Position Momentum Analysis -->
+                        <div class="dashboard-widget">
+                            <h3><i class="fas fa-chart-line"></i> Momentum por Posición</h3>
+                            <div id="positionMomentumContainer" class="position-momentum-grid">
+                                <!-- Contenido generado dinámicamente -->
+                            </div>
+                        </div>
+
+                        <!-- Opportunity Detector -->
+                        <div class="dashboard-widget">
+                            <h3><i class="fas fa-search"></i> Oportunidades Detectadas</h3>
+                            <div class="opportunity-tabs">
+                                <div class="tab-header">
+                                    <button class="tab-btn active" onclick="showOpportunityTab('sleepers')">Sleepers</button>
+                                    <button class="tab-btn" onclick="showOpportunityTab('breakouts')">Breakouts</button>
+                                    <button class="tab-btn" onclick="showOpportunityTab('values')">Values</button>
+                                </div>
+                                <div class="tab-content">
+                                    <div id="sleepersContainer" class="opportunity-list active"></div>
+                                    <div id="breakoutsContainer" class="opportunity-list"></div>
+                                    <div id="valuesContainer" class="opportunity-list"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Favoritos Chart -->
                 <div class="favoritos-chart-section">
                     <div class="chart-container">
@@ -388,7 +418,7 @@
                                     <i class="fas fa-rocket"></i>
                                 </div>
                                 <div class="stat-content">
-                                    <div class="stat-value" id="favoritosModalStartedChange">+15.2%</div>
+                                    <div class="stat-value" id="favoritosModalStartedChange">-</div>
                                     <div class="stat-label">Aumento Started</div>
                                     <div class="stat-sublabel">Esta Semana</div>
                                 </div>
@@ -402,7 +432,7 @@
                                     <i class="fas fa-chart-line"></i>
                                 </div>
                                 <div class="stat-content">
-                                    <div class="stat-value" id="favoritosModalCurrentStarted">45.8%</div>
+                                    <div class="stat-value" id="favoritosModalCurrentStarted">-</div>
                                     <div class="stat-label">% Started Actual</div>
                                     <div class="stat-sublabel">Semana Actual</div>
                                 </div>
@@ -413,7 +443,7 @@
                                     <i class="fas fa-users"></i>
                                 </div>
                                 <div class="stat-content">
-                                    <div class="stat-value" id="favoritosModalRostered">78.3%</div>
+                                    <div class="stat-value" id="favoritosModalRostered">-</div>
                                     <div class="stat-label">% Rostered</div>
                                     <div class="stat-sublabel">Total Ligas</div>
                                 </div>
@@ -424,14 +454,14 @@
                         <div class="quick-comparison">
                             <div class="comparison-item">
                                 <span class="comparison-label">Semana Anterior:</span>
-                                <span id="favoritosModalPreviousStarted" class="comparison-value previous">30.6%</span>
+                                <span id="favoritosModalPreviousStarted" class="comparison-value previous">-</span>
                             </div>
                             <div class="comparison-arrow">
                                 <i class="fas fa-long-arrow-alt-right"></i>
                             </div>
                             <div class="comparison-item">
                                 <span class="comparison-label">Semana Actual:</span>
-                                <span class="comparison-value current">45.8%</span>
+                                <span class="comparison-value current" id="favoritosModalCurrentStartedComparison">-</span>
                             </div>
                         </div>
 

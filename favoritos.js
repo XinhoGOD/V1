@@ -64,6 +64,7 @@ const favoritosElements = {
     favoritosModalStartedChange: document.getElementById('favoritosModalStartedChange'),
     favoritosModalCurrentStarted: document.getElementById('favoritosModalCurrentStarted'),
     favoritosModalPreviousStarted: document.getElementById('favoritosModalPreviousStarted'),
+    favoritosModalCurrentStartedComparison: document.getElementById('favoritosModalCurrentStartedComparison'),
     favoritosModalRostered: document.getElementById('favoritosModalRostered'),
     favoritosModalRanking: document.getElementById('favoritosModalRanking'),
     
@@ -539,6 +540,7 @@ async function showFavoritosPlayerDetails(playerId) {
     // Calcular started anterior
     const previousStarted = player.started - player.startedIncrease;
     favoritosElements.favoritosModalPreviousStarted.textContent = `${previousStarted.toFixed(1)}%`;
+    favoritosElements.favoritosModalCurrentStartedComparison.textContent = `${player.started.toFixed(1)}%`;
     
     favoritosElements.favoritosModalRostered.textContent = `${player.rostered.toFixed(1)}%`;
     favoritosElements.favoritosModalPosition.textContent = player.position;
@@ -1245,7 +1247,7 @@ Basándote en estos datos, proporciona un análisis conciso que determine:
 1. ¿Es este jugador solo "HYPE" temporal o tiene potencial real?
 2. ¿Tiene probabilidad de superar sus líneas de fantasy?
 3. Factores clave que respaldan tu análisis
-4. Recomendación: COMPRAR, VENDER, o MANTENER
+4. Recomendación: HYPE o Sleeper
 
 Responde en formato JSON con esta estructura:
 {
