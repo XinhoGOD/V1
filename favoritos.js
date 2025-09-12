@@ -902,6 +902,9 @@ function showLoading(show) {
     if (favoritosElements.loadingFavoritos) {
         favoritosElements.loadingFavoritos.style.display = show ? 'flex' : 'none';
     }
+    if (favoritosElements.favoritosContent) {
+        favoritosElements.favoritosContent.style.display = show ? 'none' : 'block';
+    }
 }
 
 function showFavoritosError(message) {
