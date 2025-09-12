@@ -212,10 +212,12 @@ function displayFavoritosPlayers() {
     const container = document.getElementById('favoritosPlayersList');
     if (!container) {
         console.error('No se encontró el contenedor favoritosPlayersList');
+        console.log('Elementos disponibles:', document.querySelectorAll('[id*="favoritos"]'));
         return;
     }
     
     console.log('Mostrando jugadores favoritos:', filteredFavoritosData.length);
+    console.log('Contenedor encontrado:', container);
     
     if (filteredFavoritosData.length === 0) {
         container.innerHTML = `
@@ -296,6 +298,7 @@ function displayFavoritosPlayers() {
     }).join('');
     
     container.innerHTML = playersHTML;
+    console.log('HTML generado y asignado al contenedor. Longitud del HTML:', playersHTML.length);
 }
 
 // Obtener nivel de aumento
@@ -988,6 +991,10 @@ function showConfigModal() {
 // Event Listeners
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Favoritos page loaded');
+    
+    // Verificar que el contenedor principal existe
+    const container = document.getElementById('favoritosPlayersList');
+    console.log('Contenedor favoritosPlayersList encontrado:', !!container);
     
     // Inicializar con configuración guardada
     const config = getSupabaseConfig();
