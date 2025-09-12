@@ -373,22 +373,44 @@ function updateTopPerformers() {
         const positionPlayers = allFavoritosData.filter(p => p.position === pos);
         if (positionPlayers.length > 0) {
             const topPlayer = positionPlayers[0];
+            
+            // Actualizar sidebar
             const nameElement = favoritosElements[`top${pos}Name`];
             const increaseElement = favoritosElements[`top${pos}Increase`];
             
             if (nameElement) nameElement.textContent = topPlayer.player;
             if (increaseElement) increaseElement.textContent = `+${topPlayer.startedIncrease.toFixed(1)}%`;
+            
+            // Actualizar elementos de la gráfica
+            const nameChartElement = document.getElementById(`top${pos}NameChart`);
+            const increaseChartElement = document.getElementById(`top${pos}IncreaseChart`);
+            
+            if (nameChartElement) nameChartElement.textContent = topPlayer.player;
+            if (increaseChartElement) increaseChartElement.textContent = `+${topPlayer.startedIncrease.toFixed(1)}%`;
         }
     });
     
     // Top player overall
     if (allFavoritosData.length > 0) {
         const topOverall = allFavoritosData[0];
+        
+        // Actualizar sidebar
         if (favoritosElements.topPlayerName) {
             favoritosElements.topPlayerName.textContent = topOverall.player;
         }
         if (favoritosElements.topPlayerIncrease) {
             favoritosElements.topPlayerIncrease.textContent = `+${topOverall.startedIncrease.toFixed(1)}%`;
+        }
+        
+        // Actualizar elementos de la gráfica
+        const topPlayerNameChart = document.getElementById('topPlayerNameChart');
+        const topPlayerIncreaseChart = document.getElementById('topPlayerIncreaseChart');
+        
+        if (topPlayerNameChart) {
+            topPlayerNameChart.textContent = topOverall.player;
+        }
+        if (topPlayerIncreaseChart) {
+            topPlayerIncreaseChart.textContent = `+${topOverall.startedIncrease.toFixed(1)}%`;
         }
     }
 }
