@@ -127,16 +127,10 @@ async function loadFavoritosData() {
         // Mostrar muestra de datos para debug
         console.log('Muestra de datos:', data[0]);
         
-        // Procesar datos y calcular métricas adicionales
+        // Procesar datos
         const processedData = data.map(player => {
-            // Calcular el cambio si no existe
-            let startedChange = player.percent_started_change || 0;
-            
-            // Si no hay percent_started_change, intentar calcularlo de otra manera
-            if (!startedChange && player.percent_started) {
-                // Usar un valor base para simular cambio positivo si los datos lo sugieren
-                startedChange = Math.max(0, player.percent_started - 20); // Valor simulado
-            }
+            // Usar directamente percent_started_change de la API
+            const startedChange = player.percent_started_change || 0;
             
             return {
                 ...player,
@@ -155,9 +149,8 @@ async function loadFavoritosData() {
         console.log('Jugadores con cambio positivo:', allFavoritosData.length);
         
         if (allFavoritosData.length === 0) {
-            // Si no hay favoritos reales, crear algunos datos de ejemplo para demostración
-            console.log('No hay favoritos reales, creando datos de ejemplo...');
-            allFavoritosData = createSampleFavoritosData();
+            showFavoritosError('No hay jugadores con incremento en porcentaje de inicio esta semana');
+            return;
         }
         
         // Ordenar por aumento descendente
@@ -897,144 +890,6 @@ function createEnhancedFavoritosPlayerCharts(playerHistory) {
     }
 }
 
-// Crear datos de ejemplo para favoritos (cuando no hay datos reales)
-function createSampleFavoritosData() {
-    const samplePlayers = [
-        { 
-            player: 'Josh Allen', 
-            position: 'QB', 
-            team: 'BUF', 
-            started: 85.2, 
-            rostered: 98.5, 
-            startedIncrease: 12.8 
-        },
-        { 
-            player: 'Christian McCaffrey', 
-            position: 'RB', 
-            team: 'SF', 
-            started: 92.1, 
-            rostered: 99.2, 
-            startedIncrease: 8.4 
-        },
-        { 
-            player: 'Cooper Kupp', 
-            position: 'WR', 
-            team: 'LAR', 
-            started: 78.9, 
-            rostered: 95.6, 
-            startedIncrease: 15.3 
-        },
-        { 
-            player: 'Travis Kelce', 
-            position: 'TE', 
-            team: 'KC', 
-            started: 88.7, 
-            rostered: 97.8, 
-            startedIncrease: 7.2 
-        },
-        { 
-            player: 'Lamar Jackson', 
-            position: 'QB', 
-            team: 'BAL', 
-            started: 72.4, 
-            rostered: 89.1, 
-            startedIncrease: 18.6 
-        },
-        { 
-            player: 'Derrick Henry', 
-            position: 'RB', 
-            team: 'TEN', 
-            started: 68.3, 
-            rostered: 87.9, 
-            startedIncrease: 11.7 
-        },
-        { 
-            player: 'Davante Adams', 
-            position: 'WR', 
-            team: 'LV', 
-            started: 81.5, 
-            rostered: 96.3, 
-            startedIncrease: 9.8 
-        },
-        { 
-            player: 'George Kittle', 
-            position: 'TE', 
-            team: 'SF', 
-            started: 65.2, 
-            rostered: 82.4, 
-            startedIncrease: 13.9 
-        },
-        { 
-            player: 'Austin Ekeler', 
-            position: 'RB', 
-            team: 'LAC', 
-            started: 76.8, 
-            rostered: 91.7, 
-            startedIncrease: 6.5 
-        },
-        { 
-            player: 'Stefon Diggs', 
-            position: 'WR', 
-            team: 'BUF', 
-            started: 79.6, 
-            rostered: 94.2, 
-            startedIncrease: 14.1 
-        },
-        { 
-            player: 'Patrick Mahomes', 
-            position: 'QB', 
-            team: 'KC', 
-            started: 83.9, 
-            rostered: 96.8, 
-            startedIncrease: 5.7 
-        },
-        { 
-            player: 'Nick Chubb', 
-            position: 'RB', 
-            team: 'CLE', 
-            started: 71.3, 
-            rostered: 88.6, 
-            startedIncrease: 10.4 
-        },
-        { 
-            player: 'Tyreek Hill', 
-            position: 'WR', 
-            team: 'MIA', 
-            started: 84.7, 
-            rostered: 97.1, 
-            startedIncrease: 8.9 
-        },
-        { 
-            player: 'Mark Andrews', 
-            position: 'TE', 
-            team: 'BAL', 
-            started: 62.8, 
-            rostered: 79.5, 
-            startedIncrease: 16.2 
-        },
-        { 
-            player: 'Alvin Kamara', 
-            position: 'RB', 
-            team: 'NO', 
-            started: 73.5, 
-            rostered: 90.3, 
-            startedIncrease: 7.8 
-        }
-    ];
-    
-    return samplePlayers.map((player, index) => ({
-        ...player,
-        player_id: `sample_${index}`,
-        player_name: player.player,
-        percent_started: player.started,
-        percent_rostered: player.rostered,
-        percent_started_change: player.startedIncrease,
-        scraped_at: new Date().toISOString(),
-        adds: Math.floor(Math.random() * 1000) + 500,
-        drops: Math.floor(Math.random() * 300) + 100
-    }));
-}
-
 // Funciones de utilidad
 function refreshFavoritosData() {
     loadFavoritosData();
@@ -1132,12 +987,15 @@ function showConfigModal() {
 
 // Event Listeners
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('Favoritos page loaded');
+    
     // Inicializar con configuración guardada
     const config = getSupabaseConfig();
     if (config.url && config.key) {
         initializeSupabase(config.url, config.key);
         loadFavoritosData();
     } else {
+        console.log('No hay configuración de Supabase disponible');
         showConfigModal();
     }
     
