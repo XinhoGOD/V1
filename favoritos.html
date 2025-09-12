@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Favoritos de la Semana - NFL Fantasy Trends</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2.39.3/dist/umd/supabase.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Header -->
+        <header class="dashboard-header">
+            <div class="header-content">
+                <h1><i class="fas fa-star"></i> Favoritos de la Semana - Tendencias Positivas</h1>
+                <div class="header-controls">
+                    <div class="favoritos-stats">
+                        <div class="stat-bubble">
+                            <span class="stat-number" id="totalFavoritos">0</span>
+                            <span class="stat-text">Favoritos</span>
+                        </div>
+                        <div class="stat-bubble">
+                            <span class="stat-number" id="avgIncrease">0%</span>
+                            <span class="stat-text">Promedio</span>
+                        </div>
+                    </div>
+                    <button id="refreshFavoritos" class="btn-refresh">
+                        <i class="fas fa-sync-alt"></i> Actualizar
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-content">
+                <!-- Navigation Menu -->
+                <nav class="sidebar-nav">
+                    <h3><i class="fas fa-bars"></i> Navegación</h3>
+                    <ul class="nav-menu">
+                        <li>
+                            <a href="dashboard.html" class="nav-item">
+                                <i class="fas fa-tachometer-alt"></i>
+                                <span>Dashboard</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="index.html" class="nav-item">
+                                <i class="fas fa-users"></i>
+                                <span>Jugadores</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="sleepers.html" class="nav-item">
+                                <i class="fas fa-eye"></i>
+                                <span>Sleepers</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="trends.html" class="nav-item">
+                                <i class="fas fa-trending-up"></i>
+                                <span>Tendencias</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="fantasy-alert.html" class="nav-item">
+                                <i class="fas fa-bell"></i>
+                                <span>Fantasy Alert</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="encuentros.html" class="nav-item">
+                                <i class="fas fa-football-ball"></i>
+                                <span>Encuentros</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="favoritos.html" class="nav-item active">
+                                <i class="fas fa-star"></i>
+                                <span>Favoritos Semana</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="settings.html" class="nav-item">
+                                <i class="fas fa-cog"></i>
+                                <span>Configuración</span>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+
+                <!-- Favoritos Filters -->
+                <div class="filters-section">
+                    <h3><i class="fas fa-filter"></i> Filtros Favoritos</h3>
+                    
+                    <div class="filter-group">
+                        <label for="positionFilterFavoritos">Posición:</label>
+                        <select id="positionFilterFavoritos" class="filter-select">
+                            <option value="">Todas las posiciones</option>
+                            <option value="QB">QB</option>
+                            <option value="RB">RB</option>
+                            <option value="WR">WR</option>
+                            <option value="TE">TE</option>
+                            <option value="K">K</option>
+                            <option value="DEF">DEF</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="teamFilterFavoritos">Equipo:</label>
+                        <select id="teamFilterFavoritos" class="filter-select">
+                            <option value="">Todos los equipos</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="minStartedIncrease">Min Aumento Started:</label>
+                        <input type="range" id="minStartedIncrease" min="0.1" max="50" value="0.1" step="0.1" class="filter-range">
+                        <span id="minStartedIncreaseValue" class="range-value">0.1%</span>
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="minCurrentStarted">Min % Started Actual:</label>
+                        <input type="range" id="minCurrentStarted" min="0" max="100" value="0" class="filter-range">
+                        <span id="minCurrentStartedValue" class="range-value">0%</span>
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="minRosteredFavoritos">Min % Rostered:</label>
+                        <input type="range" id="minRosteredFavoritos" min="0" max="100" value="0" class="filter-range">
+                        <span id="minRosteredFavoritosValue" class="range-value">0%</span>
+                    </div>
+                </div>
+
+                <!-- Top Performers Summary -->
+                <div class="stats-summary">
+                    <h3><i class="fas fa-trophy"></i> Top Performers</h3>
+                    <div class="stat-item top-performer">
+                        <span class="stat-label">🥇 Mayor Aumento:</span>
+                        <div class="stat-value-container">
+                            <span id="topPlayerName" class="stat-value">-</span>
+                            <span id="topPlayerIncrease" class="stat-increase">-</span>
+                        </div>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">💎 Mejor QB:</span>
+                        <div class="stat-value-container">
+                            <span id="topQBName" class="stat-value">-</span>
+                            <span id="topQBIncrease" class="stat-increase">-</span>
+                        </div>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">🏃 Mejor RB:</span>
+                        <div class="stat-value-container">
+                            <span id="topRBName" class="stat-value">-</span>
+                            <span id="topRBIncrease" class="stat-increase">-</span>
+                        </div>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">⚡ Mejor WR:</span>
+                        <div class="stat-value-container">
+                            <span id="topWRName" class="stat-value">-</span>
+                            <span id="topWRIncrease" class="stat-increase">-</span>
+                        </div>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">🎯 Mejor TE:</span>
+                        <div class="stat-value-container">
+                            <span id="topTEName" class="stat-value">-</span>
+                            <span id="topTEIncrease" class="stat-increase">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Loading Indicator -->
+            <div id="loadingFavoritos" class="loading-container">
+                <div class="loading-spinner"></div>
+                <p>Analizando favoritos de la semana...</p>
+            </div>
+
+            <!-- Favoritos Content -->
+            <div id="favoritosContent" class="favoritos-content" style="display: none;">
+                <!-- Favoritos Header -->
+                <div class="favoritos-header">
+                    <div class="header-info">
+                        <h2><i class="fas fa-chart-line"></i> Jugadores con Tendencia Ascendente</h2>
+                        <p>Jugadores ordenados por mayor aumento en % Started de la semana</p>
+                    </div>
+                    <div class="favoritos-metrics">
+                        <div class="metric-card favoritos-metric success-metric">
+                            <div class="metric-icon">
+                                <i class="fas fa-arrow-up"></i>
+                            </div>
+                            <div class="metric-content">
+                                <h3>Mayor Aumento</h3>
+                                <div class="metric-value" id="maxIncreaseValue">-</div>
+                                <div class="metric-change" id="maxIncreasePlayer">-</div>
+                            </div>
+                        </div>
+
+                        <div class="metric-card favoritos-metric info-metric">
+                            <div class="metric-icon">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <div class="metric-content">
+                                <h3>Total Favoritos</h3>
+                                <div class="metric-value" id="totalFavoritosMetric">0</div>
+                                <div class="metric-change">Jugadores en ascenso</div>
+                            </div>
+                        </div>
+
+                        <div class="metric-card favoritos-metric warning-metric">
+                            <div class="metric-icon">
+                                <i class="fas fa-chart-bar"></i>
+                            </div>
+                            <div class="metric-content">
+                                <h3>Promedio Aumento</h3>
+                                <div class="metric-value" id="avgIncreaseMetric">-</div>
+                                <div class="metric-change">Crecimiento medio</div>
+                            </div>
+                        </div>
+
+                        <div class="metric-card favoritos-metric elite-metric">
+                            <div class="metric-icon">
+                                <i class="fas fa-fire"></i>
+                            </div>
+                            <div class="metric-content">
+                                <h3>Tendencias Calientes</h3>
+                                <div class="metric-value" id="hotTrendsCount">0</div>
+                                <div class="metric-change">Aumentos >5%</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Favoritos Chart -->
+                <div class="favoritos-chart-section">
+                    <div class="chart-container">
+                        <h3><i class="fas fa-chart-area"></i> Top 15 Favoritos - Aumento en % Started</h3>
+                        <canvas id="favoritosChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Favoritos Players List -->
+                <div class="favoritos-players-section">
+                    <div class="favoritos-players-header">
+                        <h2><i class="fas fa-list-ol"></i> Lista Completa de Favoritos</h2>
+                        <div class="sort-controls">
+                            <label for="favoritosSortBy">Ordenar por:</label>
+                            <select id="favoritosSortBy" class="sort-select">
+                                <option value="percent_started_change">Aumento Started</option>
+                                <option value="percent_started">% Started Actual</option>
+                                <option value="percent_rostered">% Rostered</option>
+                                <option value="player_name">Nombre</option>
+                            </select>
+                            <button id="favoritosSortOrder" class="btn-sort" data-order="desc">
+                                <i class="fas fa-sort-amount-down"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="favoritosPlayersList" class="favoritos-players-list">
+                        <!-- Players will be populated here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Player Detail Modal -->
+            <div id="favoritosPlayerModal" class="modal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2 id="favoritosModalPlayerName">Favorito - Detalles del Jugador</h2>
+                        <span class="close">&times;</span>
+                    </div>
+                    <div class="modal-body">
+                        <div class="favoritos-player-info">
+                            <div class="favoritos-info-grid">
+                                <div class="favoritos-info-item">
+                                    <span class="info-label">Aumento Started:</span>
+                                    <span id="favoritosModalStartedChange" class="info-value increase-value"></span>
+                                </div>
+                                <div class="favoritos-info-item">
+                                    <span class="info-label">% Started Actual:</span>
+                                    <span id="favoritosModalCurrentStarted" class="info-value"></span>
+                                </div>
+                                <div class="favoritos-info-item">
+                                    <span class="info-label">% Started Anterior:</span>
+                                    <span id="favoritosModalPreviousStarted" class="info-value"></span>
+                                </div>
+                                <div class="favoritos-info-item">
+                                    <span class="info-label">% Rostered:</span>
+                                    <span id="favoritosModalRostered" class="info-value"></span>
+                                </div>
+                                <div class="favoritos-info-item">
+                                    <span class="info-label">Posición:</span>
+                                    <span id="favoritosModalPosition" class="info-value"></span>
+                                </div>
+                                <div class="favoritos-info-item">
+                                    <span class="info-label">Equipo:</span>
+                                    <span id="favoritosModalTeam" class="info-value"></span>
+                                </div>
+                            </div>
+                            
+                            <!-- Favorito Status Badge -->
+                            <div class="favorito-status-badge">
+                                <i class="fas fa-star"></i>
+                                <span>FAVORITO DE LA SEMANA</span>
+                                <div id="favoritosModalRanking" class="favorito-ranking">#1</div>
+                            </div>
+                        </div>
+
+                        <div class="favoritos-charts-container">
+                            <div class="favoritos-chart-section">
+                                <h3>% Started Histórico</h3>
+                                <canvas id="favoritosStartedChart"></canvas>
+                            </div>
+                            
+                            <div class="favoritos-chart-section">
+                                <h3>Cambios en % Started</h3>
+                                <canvas id="favoritosStartedChangeChart"></canvas>
+                            </div>
+                            
+                            <div class="favoritos-chart-section">
+                                <h3>% Rostered vs Started</h3>
+                                <canvas id="favoritosComparisonChart"></canvas>
+                            </div>
+                            
+                            <div class="favoritos-chart-section">
+                                <h3>Adds vs Drops</h3>
+                                <canvas id="favoritosAddsDropsChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Configuration Modal -->
+    <div id="configModal" class="modal">
+        <div class="modal-content config-modal">
+            <div class="modal-header">
+                <h2>Configuración de Supabase</h2>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="config-form">
+                    <div class="form-group">
+                        <label for="supabaseUrl">URL de Supabase:</label>
+                        <input type="text" id="supabaseUrl" placeholder="https://tu-proyecto.supabase.co" class="config-input">
+                    </div>
+                    <div class="form-group">
+                        <label for="supabaseKey">Anon Key de Supabase:</label>
+                        <input type="password" id="supabaseKey" placeholder="Tu clave anónima" class="config-input">
+                    </div>
+                    <div class="form-actions">
+                        <button id="saveConfig" class="btn-primary">Guardar Configuración</button>
+                        <button id="testConnection" class="btn-secondary">Probar Conexión</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Configuration Button -->
+    <button id="configBtn" class="config-btn" title="Configurar Supabase">
+        <i class="fas fa-cog"></i>
+    </button>
+
+    <script src="favoritos.js"></script>
+</body>
+</html>
