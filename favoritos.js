@@ -566,8 +566,14 @@ async function showFavoritosPlayerDetails(playerId) {
         modalContent.style.transition = 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)';
     }, 10);
     
-    // Cargar datos históricos
+    // Cargar datos históricos y análisis AI
     await loadFavoritosPlayerHistory(playerId);
+    
+    // Iniciar análisis AI en paralelo
+    showAIAnalysisLoading();
+    const historicalData = await getPlayerHistoricalData(playerId);
+    const aiAnalysis = await analyzePlayerWithGemini(player, historicalData);
+    displayAIAnalysis(aiAnalysis);
 }
 
 // Cargar historial del jugador
@@ -915,6 +921,199 @@ function createEnhancedFavoritosPlayerCharts(playerHistory) {
     }
 }
 
+// Obtener datos históricos del jugador
+async function getPlayerHistoricalData(playerId) {
+    try {
+        if (!supabaseClient) return [];
+        
+        // Buscar por nombre del jugador en datos históricos
+        const playerName = allFavoritosData.find(p => 
+            (p.player_id && p.player_id === playerId) || p.player === playerId
+        )?.player;
+        
+        if (!playerName) return [];
+        
+        const { data, error } = await supabaseClient
+            .from('nfl_fantasy_trends')
+            .select('*')
+            .eq('player_name', playerName)
+            .order('scraped_at', { ascending: false })
+            .limit(15);
+        
+        if (error) {
+            console.error('Error obteniendo datos históricos:', error);
+            return [];
+        }
+        
+        return data || [];
+    } catch (error) {
+        console.error('Error en getPlayerHistoricalData:', error);
+        return [];
+    }
+}
+
+// Mostrar loading del análisis AI
+function showAIAnalysisLoading() {
+    const aiSection = document.getElementById('aiAnalysisSection');
+    if (aiSection) {
+        aiSection.innerHTML = `
+            <div class="ai-analysis-loading" style="
+                text-align: center;
+                padding: 20px;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                border-radius: 12px;
+                color: white;
+                margin-top: 15px;
+            ">
+                <div class="loading-spinner" style="
+                    width: 24px;
+                    height: 24px;
+                    border: 3px solid rgba(255,255,255,0.3);
+                    border-radius: 50%;
+                    border-top-color: white;
+                    animation: spin 1s ease-in-out infinite;
+                    margin: 0 auto 10px;
+                "></div>
+                <p><i class="fas fa-brain"></i> Analizando con Gemini AI...</p>
+                <p style="font-size: 14px; opacity: 0.8;">Evaluando potencial vs hype</p>
+            </div>
+        `;
+    }
+}
+
+// Mostrar análisis AI
+function displayAIAnalysis(analysis) {
+    const aiSection = document.getElementById('aiAnalysisSection');
+    if (!aiSection) return;
+    
+    const verdictColor = getVerdictColor(analysis.verdict);
+    const riskColor = getRiskColor(analysis.risk_level);
+    const recommendationIcon = getRecommendationIcon(analysis.recommendation);
+    
+    aiSection.innerHTML = `
+        <div class="ai-analysis-result" style="
+            background: linear-gradient(135deg, ${verdictColor.start} 0%, ${verdictColor.end} 100%);
+            border-radius: 12px;
+            padding: 20px;
+            color: white;
+            margin-top: 15px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        ">
+            <div class="analysis-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h4 style="margin: 0; display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-brain"></i>
+                    Análisis Gemini AI
+                </h4>
+                <div class="confidence-badge" style="
+                    background: rgba(255,255,255,0.2);
+                    padding: 4px 12px;
+                    border-radius: 20px;
+                    font-size: 12px;
+                    font-weight: bold;
+                ">
+                    Confianza: ${analysis.confidence}
+                </div>
+            </div>
+            
+            <div class="verdict-section" style="margin-bottom: 15px;">
+                <div class="verdict-main" style="
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 10px;
+                ">
+                    <div class="verdict-text" style="font-size: 20px; font-weight: bold;">
+                        ${analysis.verdict.replace('_', ' ')}
+                    </div>
+                    <div class="recommendation" style="
+                        display: flex;
+                        align-items: center;
+                        gap: 5px;
+                        background: rgba(255,255,255,0.2);
+                        padding: 8px 12px;
+                        border-radius: 8px;
+                    ">
+                        ${recommendationIcon}
+                        <span style="font-weight: bold;">${analysis.recommendation}</span>
+                    </div>
+                </div>
+                
+                <div class="risk-level" style="
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    font-size: 14px;
+                ">
+                    <span style="
+                        background: ${riskColor};
+                        padding: 2px 8px;
+                        border-radius: 4px;
+                        font-weight: bold;
+                        color: white;
+                    ">
+                        Riesgo: ${analysis.risk_level}
+                    </span>
+                </div>
+            </div>
+            
+            <div class="analysis-text" style="
+                background: rgba(255,255,255,0.15);
+                padding: 15px;
+                border-radius: 8px;
+                margin-bottom: 15px;
+                font-size: 14px;
+                line-height: 1.5;
+            ">
+                ${analysis.analysis}
+            </div>
+            
+            <div class="key-factors" style="margin-top: 15px;">
+                <h5 style="margin: 0 0 8px 0; font-size: 14px; opacity: 0.9;">Factores Clave:</h5>
+                <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                    ${analysis.key_factors.map(factor => `
+                        <span style="
+                            background: rgba(255,255,255,0.2);
+                            padding: 4px 8px;
+                            border-radius: 4px;
+                            font-size: 12px;
+                        ">${factor}</span>
+                    `).join('')}
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Funciones auxiliares para colores e iconos
+function getVerdictColor(verdict) {
+    switch (verdict) {
+        case 'POTENCIAL_REAL':
+            return { start: '#10b981', end: '#059669' }; // Verde
+        case 'HYPE':
+            return { start: '#f59e0b', end: '#d97706' }; // Naranja
+        default:
+            return { start: '#6b7280', end: '#4b5563' }; // Gris
+    }
+}
+
+function getRiskColor(riskLevel) {
+    switch (riskLevel) {
+        case 'BAJO': return '#10b981';
+        case 'MEDIO': return '#f59e0b';
+        case 'ALTO': return '#ef4444';
+        default: return '#6b7280';
+    }
+}
+
+function getRecommendationIcon(recommendation) {
+    switch (recommendation) {
+        case 'COMPRAR': return '<i class="fas fa-arrow-up" style="color: #10b981;"></i>';
+        case 'VENDER': return '<i class="fas fa-arrow-down" style="color: #ef4444;"></i>';
+        case 'MANTENER': return '<i class="fas fa-minus" style="color: #f59e0b;"></i>';
+        default: return '<i class="fas fa-question" style="color: #6b7280;"></i>';
+    }
+}
+
 // Funciones de utilidad
 function refreshFavoritosData() {
     loadFavoritosData();
@@ -1011,6 +1210,113 @@ function showConfigModal() {
     favoritosElements.supabaseUrl.value = config.url || '';
     favoritosElements.supabaseKey.value = config.key || '';
     favoritosElements.configModal.style.display = 'block';
+}
+
+// Configuración de Gemini AI
+const GEMINI_API_KEY = 'AIzaSyBbQ6xwr3L2oP-5fu00oKJEp4cjJGL0jzc';
+const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent';
+
+// Función para analizar jugador con Gemini AI
+async function analyzePlayerWithGemini(playerData, historicalData = []) {
+    try {
+        console.log('Enviando datos a Gemini AI para análisis...');
+        
+        // Preparar datos en formato JSON para Gemini
+        const analysisData = {
+            player_info: {
+                name: playerData.player,
+                position: playerData.position,
+                team: playerData.team,
+                current_started_percentage: playerData.started,
+                current_rostered_percentage: playerData.rostered,
+                weekly_started_change: playerData.startedIncrease
+            },
+            historical_trends: historicalData.slice(0, 10), // Últimas 10 semanas max
+            analysis_request: "Analiza si este jugador es solo 'hype' temporal o tiene potencial real para superar sus líneas de fantasy"
+        };
+
+        const prompt = `
+Como experto analista de Fantasy Football NFL, analiza los siguientes datos del jugador en formato JSON:
+
+${JSON.stringify(analysisData, null, 2)}
+
+Basándote en estos datos, proporciona un análisis conciso que determine:
+
+1. ¿Es este jugador solo "HYPE" temporal o tiene potencial real?
+2. ¿Tiene probabilidad de superar sus líneas de fantasy?
+3. Factores clave que respaldan tu análisis
+4. Recomendación: COMPRAR, VENDER, o MANTENER
+
+Responde en formato JSON con esta estructura:
+{
+  "verdict": "HYPE" o "POTENCIAL_REAL",
+  "confidence": "ALTA" o "MEDIA" o "BAJA",
+  "recommendation": "COMPRAR" o "VENDER" o "MANTENER",
+  "key_factors": ["factor1", "factor2", "factor3"],
+  "analysis": "Explicación detallada en 2-3 oraciones",
+  "risk_level": "ALTO" o "MEDIO" o "BAJO"
+}
+`;
+
+        const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                contents: [{
+                    parts: [{
+                        text: prompt
+                    }]
+                }],
+                generationConfig: {
+                    temperature: 0.7,
+                    topK: 40,
+                    topP: 0.95,
+                    maxOutputTokens: 1024,
+                }
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`Gemini API error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        
+        if (data.candidates && data.candidates[0] && data.candidates[0].content) {
+            const aiResponse = data.candidates[0].content.parts[0].text;
+            
+            // Intentar parsear la respuesta JSON
+            try {
+                const analysisResult = JSON.parse(aiResponse.replace(/```json\n|\n```/g, ''));
+                return analysisResult;
+            } catch (parseError) {
+                // Si no es JSON válido, devolver un formato básico
+                return {
+                    verdict: "ANÁLISIS_DISPONIBLE",
+                    confidence: "MEDIA",
+                    recommendation: "REVISAR",
+                    key_factors: ["Análisis completado"],
+                    analysis: aiResponse,
+                    risk_level: "MEDIO"
+                };
+            }
+        } else {
+            throw new Error('Respuesta inválida de Gemini AI');
+        }
+        
+    } catch (error) {
+        console.error('Error analizando con Gemini AI:', error);
+        return {
+            verdict: "ERROR_ANÁLISIS",
+            confidence: "BAJA",
+            recommendation: "REVISAR_MANUALMENTE",
+            key_factors: ["Error en análisis AI"],
+            analysis: "No se pudo completar el análisis automatizado. Revisa manualmente.",
+            risk_level: "DESCONOCIDO"
+        };
+    }
 }
 
 // Event Listeners
