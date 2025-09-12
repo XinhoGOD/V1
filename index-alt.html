@@ -210,20 +210,20 @@
                 <span class="close">&times;</span>
             </div>
             <div class="modal-body">
-                <div class="config-form">
+                <form class="config-form" onsubmit="return false;">
                     <div class="form-group">
                         <label for="supabaseUrl">URL de Supabase:</label>
-                        <input type="text" id="supabaseUrl" placeholder="https://tu-proyecto.supabase.co" class="config-input">
+                        <input type="text" id="supabaseUrl" placeholder="https://tu-proyecto.supabase.co" class="config-input" autocomplete="url">
                     </div>
                     <div class="form-group">
                         <label for="supabaseKey">Anon Key de Supabase:</label>
-                        <input type="password" id="supabaseKey" placeholder="Tu clave anónima" class="config-input">
+                        <input type="password" id="supabaseKey" placeholder="Tu clave anónima" class="config-input" autocomplete="current-password">
                     </div>
                     <div class="form-actions">
-                        <button id="saveConfig" class="btn-primary">Guardar Configuración</button>
-                        <button id="testConnection" class="btn-secondary">Probar Conexión</button>
+                        <button type="button" id="saveConfig" class="btn-primary">Guardar Configuración</button>
+                        <button type="button" id="testConnection" class="btn-secondary">Probar Conexión</button>
                     </div>
-                </div>
+                </form>
             </div>
         </div>
     </div>
