@@ -575,11 +575,13 @@ body::before {
 
 .stat-item {
     display: flex;
+    flex-direction: row;
     justify-content: space-between;
     align-items: center;
-    padding: var(--space-4) 0;
+    padding: var(--space-3) var(--space-4);
     border-bottom: 1px solid rgba(255, 255, 255, 0.3);
     transition: var(--transition-all);
+    min-height: 50px;
 }
 
 .stat-item:last-child {
@@ -587,13 +589,42 @@ body::before {
 }
 
 .stat-item:hover {
-    padding-left: var(--space-2);
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-lg);
 }
 
 .stat-label {
     font-size: var(--text-sm);
     color: var(--gray-600);
-    font-weight: var(--font-weight-medium);
+    white-space: nowrap;
+    margin-right: var(--space-3);
+    min-width: 120px;
+}
+
+.stat-value-container {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: var(--space-2);
+    flex: 1;
+    justify-content: flex-end;
+}
+
+.stat-value {
+    font-weight: var(--font-weight-bold);
+    color: var(--gray-900);
+    font-size: var(--text-base);
+    white-space: nowrap;
+}
+
+.stat-increase {
+    font-size: var(--text-sm);
+    font-weight: var(--font-weight-semibold);
+    color: var(--success-600);
+    background: rgba(34, 197, 94, 0.1);
+    padding: 2px 8px;
+    border-radius: var(--radius-md);
+    white-space: nowrap;
 }
 
 .stat-value {
